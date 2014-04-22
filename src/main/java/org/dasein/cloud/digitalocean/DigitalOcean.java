@@ -21,7 +21,11 @@ package org.dasein.cloud.digitalocean;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.AbstractCloud;
+import org.dasein.cloud.Cloud;
+import org.dasein.cloud.CloudException;
+import org.dasein.cloud.CloudProvider;
 import org.dasein.cloud.ContextRequirements;
+import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
 
 import javax.annotation.Nonnull;
