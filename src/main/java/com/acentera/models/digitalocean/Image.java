@@ -19,73 +19,53 @@
 package com.acentera.models.digitalocean;
 
 import com.acentera.models.DigitalOceanRestModel;
-
-public class Size implements DigitalOceanRestModel {
+	
+public class Image implements DigitalOceanRestModel {
+	String id;
 	String slug;
-	Integer memory;
-	Integer vcpus;
-	Integer disk;
-	Double transfer;
-	Double price_monthly;
-	Double price_hourly;
+	String name;
+	String distribution;
+	Boolean isPublic;	
 	String[] regions;
 	
 	public String getId() {
-		return this.slug;
+		return this.id;
 	}
 	
 	public String getSlug() {
 		return this.slug;
 	}		
-
+	
 	public void setSlug(String s) {
 		this.slug = s;
 	}		
 
-	public Integer getMemory() {
-		return this.memory;
+	public String getName() {
+		return this.name;
 	}
-	public void setMemory(Integer mem) {
-		this.memory = mem;
+	public void setName(String b) {
+		this.name = b;
 	}
-	public Integer getCpus() {
-		return this.vcpus;
+	public void setPublic(boolean b) {
+		this.isPublic = b;
 	}
-	public void setCpus(Integer cpu) {
-		this.vcpus = cpu;
-	} 
-	public Integer getDisk() {
-		return this.disk;
+	public boolean getPublic() {
+		return this.isPublic;
 	}
-	public void setDisk(Integer disk) {
-		this.disk = disk;
-	} 
-	public Double getTransfer() {
-		return this.transfer;
-	}
-	public void setTransfer(Double trans) {
-		this.transfer = trans;
-	} 
-	public void setRegion(String[] reg) {
-		this.regions = reg;		
-	}
+
+
 	public String[] getRegions() {
 		return this.regions;
 	}
 	
-	public Double getHourlyPrice() {
-		return this.price_hourly;
+	public void setRegions(String[] r) {
+		this.regions = r;
 	}
-	public void setHourlyPrice(Double price) {
-		this.price_hourly = price;
-	} 
-		
-	public Double getMonthlyPrice() {
-		return this.price_monthly;
+	public String getDistribution() {
+		return this.distribution;
 	}
-	public void setMonthlyPrice(Double price) {
-		this.price_monthly = price;
-	} 
-	
+	public void setDistribution(String b) {
+		this.distribution = b;
+	}
 	
 }

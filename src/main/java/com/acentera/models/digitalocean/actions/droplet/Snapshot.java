@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Dell, Inc.
+ * Copyright (C) 2014 ACenterA, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -16,29 +16,20 @@
  * limitations under the License.
  * ====================================================================
  */
+package com.acentera.models.digitalocean.actions.droplet;
 
-package org.dasein.cloud.digitalocean;
+import com.acentera.models.digitalocean.actions.ActionType;
+import com.acentera.models.digitalocean.actions.DigitalOceanPostAction;
 
-import org.dasein.cloud.compute.AbstractComputeServices;
-import org.dasein.cloud.digitalocean.compute.DOInstance;
-import org.dasein.cloud.digitalocean.compute.DOImage;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-public class DOComputeServices extends AbstractComputeServices {
-    private DigitalOcean cloud;
-    
-    public DOComputeServices(@Nonnull DigitalOcean cloud) { this.cloud = cloud; }
-    
-    @Override
-    public @Nonnull DOInstance getVirtualMachineSupport() {
-        return new DOInstance(cloud);
-    }
-    
-    @Override
-    public @Nonnull DOImage getImageSupport() {
-        return new DOImage(cloud);
-    }
-    
+public class Snapshot extends DigitalOceanPostAction {	
+		
+	public Snapshot() {
+		actionType = ActionType.DROPLET;
+	}
+	@Override	
+	public  String getType() {			
+		return "power_on";
+	}
+	
 }
+

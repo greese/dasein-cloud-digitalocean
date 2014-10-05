@@ -28,6 +28,8 @@ import com.acentera.models.digitalocean.Actions;
 import com.acentera.models.digitalocean.Droplet;
 import com.acentera.models.digitalocean.Droplets;
 import com.acentera.models.digitalocean.IDigitalOcean;
+import com.acentera.models.digitalocean.Image;
+import com.acentera.models.digitalocean.Images;
 import com.acentera.models.digitalocean.Key;
 import com.acentera.models.digitalocean.Keys;
 import com.acentera.models.digitalocean.Region;
@@ -45,6 +47,8 @@ public enum DigitalOcean implements IDigitalOcean {
 	DROPLET,
 	SIZES,
 	SIZE,	
+	IMAGES,
+	IMAGE,	
 	//v1 only EVENTS,
 	//v1 only EVENT,
 	ACTIONS,
@@ -61,6 +65,8 @@ public enum DigitalOcean implements IDigitalOcean {
 		case REGION: return "v2/regions/%s";
 		case DROPLETS: return "v2/droplets";
 		case DROPLET: return "v2/droplets/%s";
+		case IMAGES: return "v2/images";
+		case IMAGE: return "v2/images/%s";
 		case SIZES: return "v2/sizes";
 		case SIZE: return "v2/size/%s";
 		case KEYS: return "v2/account/keys";
@@ -171,7 +177,21 @@ public enum DigitalOcean implements IDigitalOcean {
 				
 				return KEYS;
 			}
-			
+			case IMAGE: {
+				Object u = gson.fromJson(jso.getJSONObject("image").toString(), Image.class);
+				return (Image)u;
+			}			
+			case IMAGES: {
+				JSONArray jsArray = jso.getJSONArray("images");
+				Images images = new Images();
+						
+				for (int i = 0; i < jsArray.length(); i++) {
+					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Image.class);
+					images.addImage((Image)u);
+				}
+				
+				return images;
+			}
 			default: throw new IllegalArgumentException("DigitalOcean JSON to Object not implemented");
 		}		
 	}

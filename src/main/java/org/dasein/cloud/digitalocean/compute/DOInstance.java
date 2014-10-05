@@ -20,6 +20,7 @@
 package org.dasein.cloud.digitalocean.compute;
 
 import java.io.UnsupportedEncodingException;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -254,6 +255,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         //throw new OperationNotSupportedException("DigitalOcean listProduct not yet implemented.");       
         
     }
+    
 
     @Override
     public @Nonnull VirtualMachine launch(@Nonnull VMLaunchOptions cfg) throws CloudException, InternalException {

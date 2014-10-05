@@ -111,7 +111,8 @@ public class DigitalOceanModelFactory {
 					}*/
 				}
 				
-			    HttpClient httpclient = new DefaultHttpClient(my_httpParams);			    
+			    HttpClient httpclient = new DefaultHttpClient(my_httpParams);	
+			    System.out.println("QUERY URL : " + strUrl);
 			    HttpResponse response = httpclient.execute(req);
 			    
 			    if (method == RESTMethod.DELETE) {
@@ -184,7 +185,7 @@ public class DigitalOceanModelFactory {
 		String token = (String)provider.getContext().getConfigurationValue("token");
     	
 		try {		
-			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model), 3000);
+			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model), 15000);
 			
 			JSONObject jso = new JSONObject(s);
 								
@@ -209,7 +210,7 @@ public class DigitalOceanModelFactory {
 		
 		
 		try {
-			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model, id), 3000);
+			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model, id), 15000);
 			JSONObject jso = new JSONObject(s);
 			return model.fromJson(jso);				
 		} catch (Exception e) {			
@@ -269,7 +270,7 @@ public class DigitalOceanModelFactory {
         //String apiSecret = new String(keyPair[1], "utf-8");
         
 	
-		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa, id), 3000, doa);
+		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa, id), 15000, doa);
 		
 		try {
 			//Delete have no output...
@@ -304,7 +305,7 @@ public class DigitalOceanModelFactory {
 		
 		String token = (String)provider.getContext().getConfigurationValue("token");
         
-		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa), 3000, doa);
+		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa), 15000, doa);
 		
 		try {			
 			JSONObject jso = new JSONObject(s);

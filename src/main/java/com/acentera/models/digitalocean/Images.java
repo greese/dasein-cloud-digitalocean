@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Dell, Inc.
+ * Copyright (C) 2014 ACenterA, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -16,29 +16,22 @@
  * limitations under the License.
  * ====================================================================
  */
+package com.acentera.models.digitalocean;
 
-package org.dasein.cloud.digitalocean;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.dasein.cloud.compute.AbstractComputeServices;
-import org.dasein.cloud.digitalocean.compute.DOInstance;
-import org.dasein.cloud.digitalocean.compute.DOImage;
+import com.acentera.models.DigitalOceanRestModel;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+public class Images implements DigitalOceanRestModel {
 
-public class DOComputeServices extends AbstractComputeServices {
-    private DigitalOcean cloud;
-    
-    public DOComputeServices(@Nonnull DigitalOcean cloud) { this.cloud = cloud; }
-    
-    @Override
-    public @Nonnull DOInstance getVirtualMachineSupport() {
-        return new DOInstance(cloud);
-    }
-    
-    @Override
-    public @Nonnull DOImage getImageSupport() {
-        return new DOImage(cloud);
-    }
-    
+	Set<Image> sImage = new HashSet<Image>();
+	
+	public void addImage(Image d) {
+		sImage.add(d);		
+	}
+	
+	public Set<Image> getImages() {
+		return sImage;
+	}
 }
