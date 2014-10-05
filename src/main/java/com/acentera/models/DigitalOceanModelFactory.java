@@ -318,7 +318,7 @@ public class DigitalOceanModelFactory {
 		}
 	}
 	
-	public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, HashMap<String, Object> extraParameters) throws UnsupportedEncodingException, CloudException {
+	public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, HashMap<String, Object> extraParameters) throws UnsupportedEncodingException, CloudException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
@@ -327,13 +327,12 @@ public class DigitalOceanModelFactory {
 
 		try {
 			Create action = new Create(dropletName, sizeId, theImageId, regionId);
-			
+			ArrayList<Long> ssh_key_ids = new ArrayList<Long>();
 			//Extra parameter is not part of DaseinCloud.... as its cloud specific
 			if (extraParameters != null) {
 				if (extraParameters.containsKey("ssh_key_ids")) {
 					try {					
-						ArrayList<Long> ssh_key_ids = (ArrayList<Long>)extraParameters.get("ssh_key_ids");
-						action.setSshKeyIds(ssh_key_ids);
+						ssh_key_ids = (ArrayList<Long>) extraParameters.get("ssh_key_ids");						
 					} catch (Exception ee) {
 						throw new CloudException("Parameter 'ssh_key_ids' must be of type ArrayList<Long>");
 					}
@@ -342,9 +341,7 @@ public class DigitalOceanModelFactory {
 							
 				if (extraParameters.containsKey("ssh_key_id")) {
 					Long sshKeyId = Long.valueOf("" + extraParameters.get("ssh_key_ids"));
-					ArrayList<Long> ssh_key_ids = new ArrayList<Long>();
-					ssh_key_ids.add(sshKeyId);				
-					action.setSshKeyIds(ssh_key_ids);
+					ssh_key_ids.add(sshKeyId);									
 				}
 				
 				if (extraParameters.containsKey("backup_enabled")) {
@@ -363,7 +360,13 @@ public class DigitalOceanModelFactory {
 				}
 			}
 		
-		
+			if(bootstrapKey!=null) {
+				if (!bootstrapKey.isEmpty()) {
+					ssh_key_ids.add(Long.valueOf(bootstrapKey));
+				}
+			}
+			action.setSshKeyIds(ssh_key_ids);
+			
 			return (Droplet)performAction(provider, action, DigitalOcean.DROPLET);
 		} finally {
 				

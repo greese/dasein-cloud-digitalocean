@@ -296,10 +296,13 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             	}
             }
             
+            
             Droplet droplet;
-			try {
-				droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, null);
+			try {				
+				
+				droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
 			} catch (Exception e) {
+				e.printStackTrace();
 				logger.error(e.getMessage());
                 throw new CloudException(e);
 			}

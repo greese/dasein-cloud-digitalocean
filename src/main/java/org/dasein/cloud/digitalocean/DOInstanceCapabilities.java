@@ -50,7 +50,6 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canAlter(@Nonnull VmState fromState) throws CloudException, InternalException {
-    	System.out.print("STATE IS : " +fromState + " test : " + VmState.STOPPED);
     	 return fromState.equals(VmState.STOPPED);
     }
 

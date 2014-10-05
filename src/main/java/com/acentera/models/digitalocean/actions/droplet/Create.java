@@ -38,7 +38,7 @@ public class Create extends DigitalOceanPostAction {
 	
 	//Optional
 	boolean ipv6 = false;
-	String ssh_key_ids = "";
+	ArrayList<Long> ssh_key_ids = new ArrayList<Long>();
 	boolean private_networking = true;
 	boolean backups_enabled = false;
 	
@@ -59,15 +59,8 @@ public class Create extends DigitalOceanPostAction {
 
 	public void setSshKeyIds(ArrayList<Long> keyIds) {
 		Iterator<Long> itr = keyIds.iterator();
-		boolean isFirst = true;
-		ssh_key_ids = "";
-		while(itr.hasNext()) {
-			Long keyId = itr.next();
-			if (!isFirst) {
-				ssh_key_ids += ",";
-			}
-			ssh_key_ids += keyId;			
-		}
+		ssh_key_ids.clear();
+		ssh_key_ids.addAll(keyIds);
 	}
 	
 	public void setPrivateNetworking(boolean b) {		
@@ -122,7 +115,6 @@ public class Create extends DigitalOceanPostAction {
 		postData.put("private_networking", this.private_networking);			
 		postData.put("backups", this.backups_enabled);
 		postData.put("ipv6", this.ipv6);
-		//TODO: user_data
 			
 		return postData;
 	}
