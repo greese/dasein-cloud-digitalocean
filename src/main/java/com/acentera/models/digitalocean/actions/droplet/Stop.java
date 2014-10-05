@@ -29,7 +29,7 @@ public class Stop extends DigitalOceanPostAction {
 	
 	@Override	
 	public  String getType() {			
-		return "power_on";
+		return "power_off";
 	}
 	
 }

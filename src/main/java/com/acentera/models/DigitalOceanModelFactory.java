@@ -88,7 +88,6 @@ public class DigitalOceanModelFactory {
 
 				HttpConnectionParams.setConnectionTimeout(my_httpParams, timeout);
 				HttpConnectionParams.setSoTimeout(my_httpParams, timeout);				
-				
 				if ((method == RESTMethod.POST) || (method == RESTMethod.PUT)) {
 					
 					JSONObject jsonToPost = action.getParameters();
@@ -112,7 +111,6 @@ public class DigitalOceanModelFactory {
 				}
 				
 			    HttpClient httpclient = new DefaultHttpClient(my_httpParams);	
-			    System.out.println("QUERY URL : " + strUrl);
 			    HttpResponse response = httpclient.execute(req);
 			    
 			    if (method == RESTMethod.DELETE) {
@@ -142,7 +140,6 @@ public class DigitalOceanModelFactory {
 							s1=br1.readLine();						
 					}		    
 					br1.close();
-					
 					if( logger.isTraceEnabled() ) {
 						logger.trace("RECEIVED - " + "[" + response.getStatusLine().getStatusCode() + "] " + resp);
 					}	
@@ -264,12 +261,13 @@ public class DigitalOceanModelFactory {
 		}
 	
 		
-		//byte[][] keyPair = (byte[][])provider.getContext().getConfigurationValue("apiKey");
+		
 		String token = (String) provider.getContext().getConfigurationValue("token");
+		//if using V1 ...
+		//byte[][] keyPair = (byte[][])provider.getContext().getConfigurationValue("apiKey");
         //String apiShared = new String(keyPair[0], "utf-8");
         //String apiSecret = new String(keyPair[1], "utf-8");
         
-	
 		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa, id), 15000, doa);
 		
 		try {
@@ -310,7 +308,7 @@ public class DigitalOceanModelFactory {
 		try {			
 			JSONObject jso = new JSONObject(s);
 			return returnObject.fromJson(jso);				
-		} catch (JSONException e) {
+		} catch (Exception e) {
 			//Got Error...
 			throw new CloudProviderException(e);
 		} finally {
@@ -322,7 +320,6 @@ public class DigitalOceanModelFactory {
 	
 	public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, HashMap<String, Object> extraParameters) throws UnsupportedEncodingException, CloudException {
 
-
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
 		}
@@ -332,53 +329,48 @@ public class DigitalOceanModelFactory {
 			Create action = new Create(dropletName, sizeId, theImageId, regionId);
 			
 			//Extra parameter is not part of DaseinCloud.... as its cloud specific
-			if (extraParameters.containsKey("ssh_key_ids")) {
-				try {					
-					ArrayList<Long> ssh_key_ids = (ArrayList<Long>)extraParameters.get("ssh_key_ids");
+			if (extraParameters != null) {
+				if (extraParameters.containsKey("ssh_key_ids")) {
+					try {					
+						ArrayList<Long> ssh_key_ids = (ArrayList<Long>)extraParameters.get("ssh_key_ids");
+						action.setSshKeyIds(ssh_key_ids);
+					} catch (Exception ee) {
+						throw new CloudException("Parameter 'ssh_key_ids' must be of type ArrayList<Long>");
+					}
+				}
+				
+							
+				if (extraParameters.containsKey("ssh_key_id")) {
+					Long sshKeyId = Long.valueOf("" + extraParameters.get("ssh_key_ids"));
+					ArrayList<Long> ssh_key_ids = new ArrayList<Long>();
+					ssh_key_ids.add(sshKeyId);				
 					action.setSshKeyIds(ssh_key_ids);
-				} catch (Exception ee) {
-					throw new CloudException("Parameter 'ssh_key_ids' must be of type ArrayList<Long>");
 				}
-			}
-			
-						
-			if (extraParameters.containsKey("ssh_key_id")) {
-				Long sshKeyId = Long.valueOf("" + extraParameters.get("ssh_key_ids"));
-				ArrayList<Long> ssh_key_ids = new ArrayList<Long>();
-				ssh_key_ids.add(sshKeyId);				
-				action.setSshKeyIds(ssh_key_ids);
-			}
-			
-			if (extraParameters.containsKey("backup_enabled")) {
-				try {
-					action.setBackups((Boolean)extraParameters.get("backup_enabled"));
-				} catch (Exception ee) {
-					throw new CloudException("Parameter 'backup_enabled' must be of type Boolean");
+				
+				if (extraParameters.containsKey("backup_enabled")) {
+					try {
+						action.setBackups((Boolean)extraParameters.get("backup_enabled"));
+					} catch (Exception ee) {
+						throw new CloudException("Parameter 'backup_enabled' must be of type Boolean");
+					}
 				}
-			}
-			if (extraParameters.containsKey("private_networking")) {
-				try {
-					action.setPrivateNetworking((Boolean)extraParameters.get("private_networking"));
-				} catch (Exception ee) {
-					throw new CloudException("Parameter 'private_networking' must be of type Boolean");
+				if (extraParameters.containsKey("private_networking")) {
+					try {
+						action.setPrivateNetworking((Boolean)extraParameters.get("private_networking"));
+					} catch (Exception ee) {
+						throw new CloudException("Parameter 'private_networking' must be of type Boolean");
+					}
 				}
 			}
 		
 		
 			return (Droplet)performAction(provider, action, DigitalOcean.DROPLET);
-			
 		} finally {
 				
 			if( logger.isTraceEnabled() ) {
 	            logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
 			}
 		}
-	}
-
-	private static Droplet performAction(CloudProvider provider,
-			Create action, DigitalOcean droplet) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 

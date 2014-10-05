@@ -18,17 +18,38 @@
  */
 package com.acentera.models.digitalocean.actions.droplet;
 
+import org.dasein.cloud.CloudException;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.acentera.models.digitalocean.actions.ActionType;
 import com.acentera.models.digitalocean.actions.DigitalOceanPostAction;
 
 public class Snapshot extends DigitalOceanPostAction {	
 		
-	public Snapshot() {
+	public String snapshotName;
+	public Snapshot(String name) {
 		actionType = ActionType.DROPLET;
+		this.snapshotName = name;
 	}
+	
 	@Override	
 	public  String getType() {			
-		return "power_on";
+		return "snapshot";
+	}
+	
+	@Override
+	public JSONObject getParameters() throws CloudException, JSONException {
+		JSONObject j =getDefaultJSON();
+		if (snapshotName == null) {
+			throw new CloudException("Snapshot name must be defined");
+		}
+		if (snapshotName.isEmpty()) {
+			throw new CloudException("Snapshot name must not be empty");
+		}
+		
+		j.put("name",  snapshotName);
+		return j;
 	}
 	
 }

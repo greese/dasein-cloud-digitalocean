@@ -42,7 +42,7 @@ public class Create extends DigitalOceanPostAction {
 	boolean private_networking = true;
 	boolean backups_enabled = false;
 	
-	public Create( String name, String image_or_imageId, String size, String region_slug_or_id) {
+	public Create( String name, String size, String image_or_imageId, String region_slug_or_id) {
 		this.name = name;
 		this.image = image_or_imageId;
 		this.size = size;
@@ -114,7 +114,9 @@ public class Create extends DigitalOceanPostAction {
 		postData.put("region",  this.region);
 		
 		if (this.ssh_key_ids != null) {
-			postData.put("ssh_keys", this.ssh_key_ids);			
+			if (!this.ssh_key_ids.isEmpty()) { 
+				postData.put("ssh_keys", this.ssh_key_ids);
+			}
 		}
 
 		postData.put("private_networking", this.private_networking);			

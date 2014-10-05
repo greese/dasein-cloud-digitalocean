@@ -311,7 +311,6 @@ public class DOImage extends AbstractImageSupport {
 	        	arch = Architecture.I32;
 	        }
 	        
-	        System.out.println("DISTRI: "+ instance.getDistribution());
 	        Platform platform = Platform.UNKNOWN;
 	        if (instance.getDistribution().compareToIgnoreCase("Ubuntu") == 0) {
 	        	platform = Platform.UBUNTU;
@@ -321,7 +320,6 @@ public class DOImage extends AbstractImageSupport {
 	        	platform = Platform.FEDORA_CORE;
 	        }
 	        
-	        System.out.println(" PLATFORM IS : " + platform);
 	        MachineImage image = MachineImage.getImageInstance(
 	        		ctx.getAccountNumber()
 	        		, ctx.getRegionId()

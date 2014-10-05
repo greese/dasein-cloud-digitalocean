@@ -50,7 +50,8 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canAlter(@Nonnull VmState fromState) throws CloudException, InternalException {
-        return true;
+    	System.out.print("STATE IS : " +fromState + " test : " + VmState.STOPPED);
+    	 return fromState.equals(VmState.STOPPED);
     }
 
     @Override
@@ -65,7 +66,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canReboot(@Nonnull VmState fromState) throws CloudException, InternalException {
-        return true;
+        return (fromState.equals(VmState.RUNNING));
     }
 
     @Override
@@ -75,12 +76,12 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canStart(@Nonnull VmState fromState) throws CloudException, InternalException {
-        return !fromState.equals(VmState.RUNNING);
+        return fromState.equals(VmState.STOPPED);
     }
 
     @Override
     public boolean canStop(@Nonnull VmState fromState) throws CloudException, InternalException {
-        return !fromState.equals(VmState.STOPPED);
+        return fromState.equals(VmState.RUNNING);
     }
 
     @Override
@@ -120,7 +121,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public @Nullable VMScalingCapabilities getVerticalScalingCapabilities() throws CloudException, InternalException {
-        return null;
+    	 return VMScalingCapabilities.getInstance(false, true, Requirement.NONE, Requirement.NONE);
     }
 
     @Nonnull
@@ -136,7 +137,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public @Nonnull Requirement identifyShellKeyRequirement(Platform platform) throws CloudException, InternalException {
-        return Requirement.OPTIONAL;
+        return Requirement.REQUIRED;
     }
 
     @Override

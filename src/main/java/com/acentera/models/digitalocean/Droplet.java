@@ -29,6 +29,7 @@ public class Droplet implements DigitalOceanRestModel {
 	String name;
 	Long image_id;
 	Long region_id;
+	Size size;
 	String ip_address;
 	String private_ip_address;
 	String status;
@@ -42,6 +43,13 @@ public class Droplet implements DigitalOceanRestModel {
 	
 	public String getName() {
 		return this.name;
+	}
+	
+	public String getSize() {
+		return this.size.getSlug();
+	}
+	public void setSize(Size s) {
+		this.size = s;
 	}
 	
 	public Long getImageId() {

@@ -93,6 +93,11 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         	
 
         	VirtualMachine vm = getVirtualMachine(vmId);
+        	
+        	if (!getCapabilities().canAlter(vm.getCurrentState())) {
+        		throw new CloudException("Droplet is currently " + vm.getCurrentState() + ". Please power it off to run this event.");        		
+        	}
+        	
         	if (vm.getProductId().compareTo(newProductId) == 0) {
         		throw new CloudException("Product Id must differ from current vm product id");
         	}
@@ -266,7 +271,6 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                 throw new CloudException("No context was established for this request");
             }
             MachineImage img = getProvider().getComputeServices().getImageSupport().getMachineImage(cfg.getMachineImageId());
-
             if( img == null ) {
                 throw new InternalException("No such machine image: " + cfg.getMachineImageId());
             }
@@ -282,18 +286,20 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                 throw new InternalException("No product defined as part of launch options.");
             }
             
-            String regionId = cfg.getDataCenterId();            
+            
+            String regionId = cfg.getDataCenterId();         
             if( regionId == null ) {
-                throw new InternalException("No region defined as part of launch options.");
+            	if (ctx.getRegionId() != null) {
+            		regionId = ctx.getRegionId();
+            	} else {
+            		throw new InternalException("No region defined as part of launch options.");
+            	}
             }
             
-            String APIKey = ctx.getAccountNumber();            
-            String Secret = new String(ctx.getAccessPrivate());            
-                                    
             Droplet droplet;
 			try {
 				droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, null);
-			} catch (UnsupportedEncodingException e) {
+			} catch (Exception e) {
 				logger.error(e.getMessage());
                 throw new CloudException(e);
 			}
@@ -516,7 +522,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                       throw new CloudException("No such instance found: " + instanceId);
                   }
                   
-              	  Destroy action = new Destroy();            
+              	  Destroy action = new Destroy();            	
                   
                   Action evt = DigitalOceanModelFactory.performAction(getProvider(), action, instanceId);
                 
@@ -557,6 +563,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         server.setProviderOwnerId(ctx.getAccountNumber());
         server.setCurrentState(instance.getStatus());
         server.setName(instance.getName());
+        server.setProductId(instance.getSize());        
         server.setDescription(null);
         server.setProviderVirtualMachineId(String.valueOf(instance.getId()));
         
