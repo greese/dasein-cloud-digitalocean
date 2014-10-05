@@ -1,28 +1,10 @@
-/**
- * Copyright (C) 2014 Dell, Inc.
- * See annotations for authorship information
- *
- * ====================================================================
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ====================================================================
- */
-
 package org.dasein.cloud.digitalocean;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
+import org.dasein.cloud.compute.VirtualMachineProduct;
 import org.dasein.cloud.dc.DataCenter;
 import org.dasein.cloud.dc.DataCenterServices;
 import org.dasein.cloud.dc.Region;
@@ -31,26 +13,30 @@ import org.dasein.cloud.util.Cache;
 import org.dasein.cloud.util.CacheLevel;
 import org.dasein.util.uom.time.Day;
 import org.dasein.util.uom.time.Hour;
+import org.dasein.util.uom.time.Minute;
 import org.dasein.util.uom.time.TimePeriod;
+
+import com.acentera.models.DigitalOceanModelFactory;
+import com.acentera.models.digitalocean.Regions;
+import com.acentera.models.digitalocean.Size;
+import com.acentera.models.digitalocean.Sizes;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Locale;
+import java.util.Set;
 
-/**
- * Unimplemented digitalocean class
- * @author INSERT NAME HERE
- * @version 2014.03 initial version
- * @since 2014.03
- */
-public class DataCenters implements DataCenterServices {
-    static private final Logger logger = DigitalOcean.getLogger(DataCenters.class);
+public class DOLocation implements DataCenterServices {
+    static private final Logger logger = DigitalOcean.getLogger(DOLocation.class);
 
     private DigitalOcean provider;
 
-    DataCenters(@Nonnull DigitalOcean provider) { this.provider = provider; }
+    DOLocation(@Nonnull DigitalOcean provider) { this.provider = provider; }
 
     @Override
     public @Nullable DataCenter getDataCenter(@Nonnull String dataCenterId) throws InternalException, CloudException {
@@ -98,16 +84,30 @@ public class DataCenters implements DataCenterServices {
             if( ctx == null ) {
                 throw new NoContextException();
             }
-            Cache<DataCenter> cache = Cache.getInstance(provider, "dataCenters", DataCenter.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Day>(1, TimePeriod.DAY));
+            Cache<DataCenter> cache = Cache.getInstance(provider, "dataCenters", DataCenter.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
             Collection<DataCenter> dcList = (Collection<DataCenter>)cache.get(ctx);
 
             if( dcList != null ) {
                 return dcList;
             }
             ArrayList<DataCenter> dataCenters = new ArrayList<DataCenter>();
-            // TODO: query the API for the data center list
-            cache.put(ctx, dataCenters);
-            return dataCenters;
+            
+            Regions availableregions;
+			try {
+				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.REGIONS);
+				
+	            Set<com.acentera.models.digitalocean.Region> regions = availableregions.getRegions();
+	            Iterator<com.acentera.models.digitalocean.Region> itr = regions.iterator();
+	            while(itr.hasNext()) {
+	            	com.acentera.models.digitalocean.Region s = itr.next();
+	            	DataCenter vmp = toDatacenter(s);
+	            	dataCenters.add(vmp);
+	            }
+	            cache.put(ctx, dataCenters);
+	            return dataCenters;
+			} catch (Exception e) {
+				throw new CloudException(e);				
+			}
         }
         finally {
             APITrace.end();
@@ -130,13 +130,50 @@ public class DataCenters implements DataCenterServices {
                 return regions;
             }
             regions = new ArrayList<Region>();
-            // TODO: query the API for the regions
-            cache.put(ctx, regions);
-            return regions;
-
+           
+            
+            Regions availableregions;
+			try {
+				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.REGIONS);
+				
+	            Set<com.acentera.models.digitalocean.Region> regionsQuery = availableregions.getRegions();
+	            Iterator<com.acentera.models.digitalocean.Region> itr = regionsQuery.iterator();
+	            while(itr.hasNext()) {
+	            	com.acentera.models.digitalocean.Region s = itr.next();
+	            	Region vmp = toRegion(s);
+	            	regions.add(vmp);
+	            }
+	            cache.put(ctx, regions);
+	            return regions;
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new CloudException(e);				
+			}
         }
         finally {
             APITrace.end();
         }
+    }
+    
+    public DataCenter toDatacenter(com.acentera.models.digitalocean.Region r) {
+    	
+    	DataCenter dc = new DataCenter();
+    	dc.setRegionId(r.getSlug());
+    	dc.setProviderDataCenterId(r.getSlug());
+    	dc.setName(r.getName());
+    	dc.setActive(r.getActive());
+    	dc.setAvailable(r.getActive());
+    	return dc;
+    }
+    
+    public Region toRegion(com.acentera.models.digitalocean.Region region) {
+    	
+    	Region r = new Region();
+    	r.setProviderRegionId(region.getSlug());
+    	r.setName(region.getName());
+    	r.setActive(region.getActive());
+    	r.setJurisdiction(region.getSlug().substring(0,2).toUpperCase());
+    	r.setAvailable(region.getActive());
+    	return r;
     }
 }
