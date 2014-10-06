@@ -20,6 +20,7 @@
 package org.dasein.cloud.digitalocean;
 
 import javax.annotation.Nonnull;
+
 import javax.annotation.Nullable;
 
 import org.apache.log4j.Logger;
@@ -28,7 +29,9 @@ import org.dasein.cloud.CloudException;
 import org.dasein.cloud.ContextRequirements;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
-import org.dasein.cloud.digitalocean.identity.DOIdentity;
+	
+import com.acentera.models.DigitalOceanModelFactory;
+import com.acentera.models.digitalocean.Regions;
 
 /**
  * Add header info here
@@ -176,11 +179,33 @@ public class DigitalOcean extends AbstractCloud {
                 return null;
             }
             try {
+            	
+            	
+            	
+            	
+            	
+            	
+            	
+            	
+            	
+            	
+            	
                 // TODO: Go to DigitalOcean and verify that the specified credentials in the context are correct
                 // return null if they are not
                 // return an account number if they are
-            	logger.debug("TEST API KEY : " + ctx.getConfigurationValue("token"));
-                return null;
+            	//logger.debug("TEST API KEY : " + ctx.getConfigurationValue("token"));
+            	String token = (String)ctx.getConfigurationValue("token");
+            	if (token == null) {
+            		logger.error("No token parameter as provided");
+            		return null;
+            	}
+            	
+        		Regions r = (Regions)DigitalOceanModelFactory.getModel(this, com.acentera.models.DigitalOcean.REGIONS);
+        		if (r.getRegions().size() > 0) {
+        			return ctx.getAccountNumber();
+        		}
+        		return null;
+            	            	
             }
             catch( Throwable t ) {
                 logger.error("Error querying API key: " + t.getMessage());
