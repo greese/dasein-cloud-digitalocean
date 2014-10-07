@@ -19,7 +19,12 @@
 
 package org.dasein.cloud.digitalocean.compute;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -66,14 +71,20 @@ import org.dasein.cloud.network.IpAddress;
 import org.dasein.cloud.network.IpAddressSupport;
 import org.dasein.cloud.network.NetworkServices;
 import org.dasein.cloud.util.APITrace;
+import org.dasein.cloud.util.Cache;
+import org.dasein.cloud.util.CacheLevel;
 import org.dasein.util.uom.storage.Gigabyte;
 import org.dasein.util.uom.storage.Megabyte;
 import org.dasein.util.uom.storage.Storage;
+import org.dasein.util.uom.time.Day;
+import org.dasein.util.uom.time.TimePeriod;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     static private final Logger logger = Logger.getLogger(DOInstance.class);
-    static private final Calendar UTC_CALENDAR = Calendar.getInstance(new SimpleTimeZone(0, "GMT"));
 
     private transient volatile DOInstanceCapabilities capabilities;
 
@@ -237,17 +248,150 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
         ArrayList<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
         try {
-        	Sizes availablesizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);        	
         	
-            if (availablesizes != null) {
-            
-	            Set<Size> sizes = availablesizes.getSizes();
-	            Iterator<Size> itr = sizes.iterator();
-	            while(itr.hasNext()) {
-	            	Size s = itr.next();
-	            	VirtualMachineProduct vmp = toProduct(s);
-	            	list.add(vmp);
+        	//Lest first check if they want to streamline to use only a specific subset of products... or local cache        	
+        	String resource = ((DigitalOcean)getProvider()).getVMProductsResource();
+        	if (resource == null) {
+        		if (logger.isTraceEnabled()) {
+        			logger.error("No local file found, will proceed with Cloud API Call. See digitalocean.vmproducts system parameter");
+        		}
+        		//Perform DigitalOcean query  
+        		
+	        	Sizes availablesizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);        	
+	        	
+	            if (availablesizes != null) {
+	            
+		            Set<Size> sizes = availablesizes.getSizes();
+		            Iterator<Size> itr = sizes.iterator();
+		            while(itr.hasNext()) {
+		            	Size s = itr.next();
+		            	
+		            	VirtualMachineProduct vmp = toProduct(s);
+		            	list.add(vmp);
+		            }
+	            } else {
+	            	logger.error("No product could be found, " + getProvider().getCloudName() + " provided no data for their sizesA PI.");
+	                throw new CloudException("No product could be found.");
 	            }
+            } else {
+            	if (logger.isTraceEnabled()) {
+        			logger.error("Local file found, will not proceed with Cloud API Call. See digitalocean.vmproducts system parameter");
+        		}
+            	
+            	
+            	Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + architecture.name(), VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
+                Iterable<VirtualMachineProduct> products = cache.get(getContext());
+
+                //if( products == null ) {                    
+
+                    try {
+                        InputStream input = DigitalOcean.class.getResourceAsStream(resource);
+
+                        if( input != null ) {
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                            StringBuilder json = new StringBuilder();
+                            String line;
+                            while( (line = reader.readLine()) != null ) {
+                                json.append(line);
+                                json.append("\n");
+                            }
+                            JSONArray arr = new JSONArray(json.toString());
+                            JSONObject toCache = null;
+
+                            for( int i=0; i<arr.length(); i++ ) {
+                                JSONObject productSet = arr.getJSONObject(i);
+                                String cloud, provider;
+
+                                if( productSet.has("cloud") ) {
+                                    cloud = productSet.getString("cloud");
+                                }
+                                else {
+                                    continue;
+                                }
+                                if( productSet.has("provider") ) {
+                                    provider = productSet.getString("provider");
+                                }
+                                else {
+                                    continue;
+                                }
+                                if( !productSet.has("products") ) {
+                                    continue;
+                                }
+                                if( toCache == null || (provider.equals("default") && cloud.equals("default")) ) {
+                                    toCache = productSet;
+                                }
+                                System.out.println("PRoviderName is : " + getProvider().getProviderName() + " vs... " + provider);
+                                System.out.println("Cloud is : " + getProvider().getCloudName() + " vs... " + cloud);
+                                if( provider.equalsIgnoreCase(getProvider().getProviderName()) && cloud.equalsIgnoreCase(getProvider().getCloudName()) ) {
+                                    toCache = productSet;
+                                    break;
+                                }
+                            }
+                            
+                            if( toCache == null ) {
+                                logger.warn("No products were defined");
+                                return Collections.emptyList();
+                            }
+                            JSONArray plist = toCache.getJSONArray("products");
+
+                            for( int i=0; i<plist.length(); i++ ) {
+                                JSONObject product = plist.getJSONObject(i);
+                                boolean supported = false;
+
+                                if( product.has("architectures") ) {
+                                    JSONArray architectures = product.getJSONArray("architectures");
+
+                                    for( int j=0; j<architectures.length(); j++ ) {
+                                        String a = architectures.getString(j);
+
+                                        if( architecture.name().equals(a) ) {
+                                            supported = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if( !supported ) {
+                                    continue;
+                                }
+                                if( product.has("excludesRegions") ) {
+                                    JSONArray regions = product.getJSONArray("excludesRegions");
+
+                                    for( int j=0; j<regions.length(); j++ ) {
+                                        String r = regions.getString(j);
+
+                                        if( r.equals(getContext().getRegionId()) ) {
+                                            supported = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if( !supported ) {
+                                    continue;
+                                }
+                                VirtualMachineProduct prd = toProductFromJSON(product);
+
+                                if( prd != null ) {
+                                    list.add(prd);
+                                }
+                            }
+                        }
+                        else {
+                            logger.warn("No standard products resource exists for " + resource);
+                        }
+
+                        return list;
+                        //cache.put(getContext(), products);
+                    }
+                    catch( IOException e ) {
+                    	e.printStackTrace();
+                        throw new InternalException(e);
+                    }
+                    catch( JSONException e ) {
+                    	e.printStackTrace();
+                        throw new InternalException(e);
+                    }
+                //}
+                return products;
             }
 
             return list;        	
@@ -262,7 +406,65 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     }
     
 
-    @Override
+    private @Nullable  VirtualMachineProduct toProductFromJSON(@Nonnull JSONObject json) throws InternalException {
+            VirtualMachineProduct prd = new VirtualMachineProduct();
+
+            try {
+                if( json.has("id") ) {
+                    prd.setProviderProductId(json.getString("id"));
+                }
+                else {
+                    return null;
+                }
+                if( json.has("name") ) {
+                    prd.setName(json.getString("name"));
+                }
+                else {
+                    prd.setName(prd.getProviderProductId());
+                }
+                if( json.has("description") ) {
+                    prd.setDescription(json.getString("description"));
+                }
+                else {
+                    prd.setDescription(prd.getName());
+                }
+                if( json.has("cpuCount") ) {
+                    prd.setCpuCount(json.getInt("cpuCount"));
+                }
+                else {
+                    prd.setCpuCount(1);
+                }
+                if( json.has("rootVolumeSizeInGb") ) {
+                    prd.setRootVolumeSize(new Storage<Gigabyte>(json.getInt("rootVolumeSizeInGb"), Storage.GIGABYTE));
+                }
+                else {
+                    prd.setRootVolumeSize(new Storage<Gigabyte>(1, Storage.GIGABYTE));
+                }
+                if( json.has("ramSizeInMb") ) {
+                    prd.setRamSize(new Storage<Megabyte>(json.getInt("ramSizeInMb"), Storage.MEGABYTE));
+                }
+                else {
+                    prd.setRamSize(new Storage<Megabyte>(512, Storage.MEGABYTE));
+                }
+                if( json.has("standardHourlyRates") ) {
+                    JSONArray rates = json.getJSONArray("standardHourlyRates");
+
+                    for( int i=0; i<rates.length(); i++ ) {
+                        JSONObject rate = rates.getJSONObject(i);
+
+                        if( rate.has("rate") ) {
+                            prd.setStandardHourlyRate((float)rate.getDouble("rate"));
+                        }
+                    }
+                }
+            }
+            catch( JSONException e ) {
+                throw new InternalException(e);
+            }
+            return prd;        
+	}
+
+	@Override
     public @Nonnull VirtualMachine launch(@Nonnull VMLaunchOptions cfg) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "launchVM");
         try {

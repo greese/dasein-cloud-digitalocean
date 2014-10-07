@@ -19,6 +19,8 @@
 
 package org.dasein.cloud.digitalocean;
 
+import java.util.Properties;
+
 import javax.annotation.Nonnull;
 
 import javax.annotation.Nullable;
@@ -180,17 +182,7 @@ public class DigitalOcean extends AbstractCloud {
             }
             try {
             	
-            	
-            	
-            	
-            	
-            	
-            	
-            	
-            	
-            	
-            	
-                // TODO: Go to DigitalOcean and verify that the specified credentials in the context are correct
+                // TODO: Can we simplify this call so it can  be faster?
                 // return null if they are not
                 // return an account number if they are
             	//logger.debug("TEST API KEY : " + ctx.getConfigurationValue("token"));
@@ -218,5 +210,35 @@ public class DigitalOcean extends AbstractCloud {
                 logger.trace("EXIT - " + DigitalOcean.class.getName() + ".textContext()");
             }
         }
+    }
+    
+    public @Nonnull String getVMProductsResource() {
+        ProviderContext ctx = getContext();
+        String value;
+       
+        if( ctx == null ) {
+            value = null;
+        }
+        else {
+
+            Properties p = ctx.getCustomProperties();
+
+            if( p == null ) {
+                value = null;
+            }
+            else {            	
+                value = p.getProperty("vmproducts");
+            }
+        }
+        if( value == null ) {
+        	
+        	//TODO: Should we use getCloud()? instead of digitalocean ?
+            value = System.getProperty("digitalocean.vmproducts");
+        }
+        if( value == null ) {
+        	//We should add this resource as example only if we want to enforce it...
+            value = "/org/dasein/cloud/digitalocean/vmproducts.json";
+        }
+        return value;
     }
 }
