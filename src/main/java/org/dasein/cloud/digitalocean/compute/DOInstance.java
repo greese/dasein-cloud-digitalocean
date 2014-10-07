@@ -390,8 +390,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                     	e.printStackTrace();
                         throw new InternalException(e);
                     }
-                //}
-                return products;
+                //}                
             }
 
             return list;        	
