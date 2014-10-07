@@ -50,6 +50,17 @@ import org.dasein.cloud.compute.VirtualMachineProduct;
 import org.dasein.cloud.compute.VmState;
 import org.dasein.cloud.digitalocean.DOInstanceCapabilities;
 import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.models.Action;
+import org.dasein.cloud.digitalocean.models.Droplet;
+import org.dasein.cloud.digitalocean.models.Droplets;
+import org.dasein.cloud.digitalocean.models.Size;
+import org.dasein.cloud.digitalocean.models.Sizes;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Destroy;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Reboot;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Resize;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Start;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Stop;
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.network.IPVersion;
 import org.dasein.cloud.network.IpAddress;
 import org.dasein.cloud.network.IpAddressSupport;
@@ -59,17 +70,6 @@ import org.dasein.util.uom.storage.Gigabyte;
 import org.dasein.util.uom.storage.Megabyte;
 import org.dasein.util.uom.storage.Storage;
 
-import com.acentera.models.DigitalOceanModelFactory;
-import com.acentera.models.digitalocean.Action;
-import com.acentera.models.digitalocean.Droplet;
-import com.acentera.models.digitalocean.Droplets;
-import com.acentera.models.digitalocean.Size;
-import com.acentera.models.digitalocean.Sizes;
-import com.acentera.models.digitalocean.actions.droplet.Destroy;
-import com.acentera.models.digitalocean.actions.droplet.Reboot;
-import com.acentera.models.digitalocean.actions.droplet.Resize;
-import com.acentera.models.digitalocean.actions.droplet.Start;
-import com.acentera.models.digitalocean.actions.droplet.Stop;
 
 public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     static private final Logger logger = Logger.getLogger(DOInstance.class);
@@ -191,7 +191,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                         
             try {
             	//TODO: We should implement this into the DigitalOceanHelper... maybe would be cleaner?
-            	Droplet d = (Droplet) DigitalOceanModelFactory.getModelById(getProvider(), com.acentera.models.DigitalOcean.DROPLET, instanceId);
+            	Droplet d = (Droplet) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLET, instanceId);
             	if (d == null) {
             		throw new CloudException("No such instance found:" + instanceId);
             	}
@@ -237,7 +237,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
         ArrayList<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
         try {
-        	Sizes availablesizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), com.acentera.models.DigitalOcean.SIZES);        	
+        	Sizes availablesizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);        	
         	
             if (availablesizes != null) {
             
@@ -330,7 +330,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             ArrayList<ResourceStatus> list = new ArrayList<ResourceStatus>();
             try {
             	
-            	Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), com.acentera.models.DigitalOcean.DROPLETS );
+            	Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
             	if (droplets != null) {
 	            	Set<Droplet> s = droplets.getDroplet();
 	            	Iterator<Droplet> itr = s.iterator();
@@ -409,7 +409,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             try {
 
             	
-            	Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), com.acentera.models.DigitalOcean.DROPLETS );
+            	Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
             	if (droplets != null) {
 	            	Set<Droplet> s = droplets.getDroplet();
 	            	Iterator<Droplet> itr = s.iterator();

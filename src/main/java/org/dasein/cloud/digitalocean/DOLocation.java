@@ -8,6 +8,10 @@ import org.dasein.cloud.compute.VirtualMachineProduct;
 import org.dasein.cloud.dc.DataCenter;
 import org.dasein.cloud.dc.DataCenterServices;
 import org.dasein.cloud.dc.Region;
+import org.dasein.cloud.digitalocean.models.Regions;
+import org.dasein.cloud.digitalocean.models.Size;
+import org.dasein.cloud.digitalocean.models.Sizes;
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
 import org.dasein.cloud.util.CacheLevel;
@@ -16,10 +20,6 @@ import org.dasein.util.uom.time.Hour;
 import org.dasein.util.uom.time.Minute;
 import org.dasein.util.uom.time.TimePeriod;
 
-import com.acentera.models.DigitalOceanModelFactory;
-import com.acentera.models.digitalocean.Regions;
-import com.acentera.models.digitalocean.Size;
-import com.acentera.models.digitalocean.Sizes;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -94,12 +94,12 @@ public class DOLocation implements DataCenterServices {
             
             Regions availableregions;
 			try {
-				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.REGIONS);
+				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
 				
-	            Set<com.acentera.models.digitalocean.Region> regions = availableregions.getRegions();
-	            Iterator<com.acentera.models.digitalocean.Region> itr = regions.iterator();
+	            Set<org.dasein.cloud.digitalocean.models.Region> regions = availableregions.getRegions();
+	            Iterator<org.dasein.cloud.digitalocean.models.Region> itr = regions.iterator();
 	            while(itr.hasNext()) {
-	            	com.acentera.models.digitalocean.Region s = itr.next();
+	            	org.dasein.cloud.digitalocean.models.Region s = itr.next();
 	            	DataCenter vmp = toDatacenter(s);
 	            	dataCenters.add(vmp);
 	            }
@@ -134,12 +134,12 @@ public class DOLocation implements DataCenterServices {
             
             Regions availableregions;
 			try {
-				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.REGIONS);
+				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
 				
-	            Set<com.acentera.models.digitalocean.Region> regionsQuery = availableregions.getRegions();
-	            Iterator<com.acentera.models.digitalocean.Region> itr = regionsQuery.iterator();
+	            Set<org.dasein.cloud.digitalocean.models.Region> regionsQuery = availableregions.getRegions();
+	            Iterator<org.dasein.cloud.digitalocean.models.Region> itr = regionsQuery.iterator();
 	            while(itr.hasNext()) {
-	            	com.acentera.models.digitalocean.Region s = itr.next();
+	            	org.dasein.cloud.digitalocean.models.Region s = itr.next();
 	            	Region vmp = toRegion(s);
 	            	regions.add(vmp);
 	            }
@@ -155,7 +155,7 @@ public class DOLocation implements DataCenterServices {
         }
     }
     
-    public DataCenter toDatacenter(com.acentera.models.digitalocean.Region r) {
+    public DataCenter toDatacenter(org.dasein.cloud.digitalocean.models.Region r) {
     	
     	DataCenter dc = new DataCenter();
     	dc.setRegionId(r.getSlug());
@@ -166,7 +166,7 @@ public class DOLocation implements DataCenterServices {
     	return dc;
     }
     
-    public Region toRegion(com.acentera.models.digitalocean.Region region) {
+    public Region toRegion(org.dasein.cloud.digitalocean.models.Region region) {
     	
     	Region r = new Region();
     	r.setProviderRegionId(region.getSlug());

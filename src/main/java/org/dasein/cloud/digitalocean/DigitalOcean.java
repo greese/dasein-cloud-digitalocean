@@ -29,9 +29,9 @@ import org.dasein.cloud.CloudException;
 import org.dasein.cloud.ContextRequirements;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
+import org.dasein.cloud.digitalocean.models.Regions;
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 	
-import com.acentera.models.DigitalOceanModelFactory;
-import com.acentera.models.digitalocean.Regions;
 
 /**
  * Add header info here
@@ -200,7 +200,7 @@ public class DigitalOcean extends AbstractCloud {
             		return null;
             	}
             	
-        		Regions r = (Regions)DigitalOceanModelFactory.getModel(this, com.acentera.models.DigitalOcean.REGIONS);
+        		Regions r = (Regions)DigitalOceanModelFactory.getModel(this, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
         		if (r.getRegions().size() > 0) {
         			return ctx.getAccountNumber();
         		}

@@ -26,6 +26,11 @@ import org.dasein.cloud.*;
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.dc.DataCenter;
 import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.models.Action;
+import org.dasein.cloud.digitalocean.models.Droplet;
+import org.dasein.cloud.digitalocean.models.Images;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Stop;
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.ServiceAction;
 import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
@@ -37,11 +42,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.acentera.models.DigitalOceanModelFactory;
-import com.acentera.models.digitalocean.Action;
-import com.acentera.models.digitalocean.Droplet;
-import com.acentera.models.digitalocean.Images;
-import com.acentera.models.digitalocean.actions.droplet.Stop;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -240,12 +240,12 @@ public class DOImage extends AbstractImageSupport {
 		
 		        	try {
 		            	
-		            	Images images = (Images)DigitalOceanModelFactory.getModel(getProvider(), com.acentera.models.DigitalOcean.IMAGES );
+		            	Images images = (Images)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES );
 		            	if (images != null) {
-			            	Set<com.acentera.models.digitalocean.Image> s = images.getImages();
-			            	Iterator<com.acentera.models.digitalocean.Image> itr = s.iterator();
+			            	Set<org.dasein.cloud.digitalocean.models.Image> s = images.getImages();
+			            	Iterator<org.dasein.cloud.digitalocean.models.Image> itr = s.iterator();
 			            	while(itr.hasNext()) {
-			            		com.acentera.models.digitalocean.Image d = itr.next();
+			            		org.dasein.cloud.digitalocean.models.Image d = itr.next();
 			            		MachineImage[] status = toImage(d);
 			            		if( status != null ) {
 			            			int len = status.length;
@@ -289,7 +289,7 @@ public class DOImage extends AbstractImageSupport {
         }
     }
 
-    private MachineImage[] toImage(com.acentera.models.digitalocean.Image instance) {
+    private MachineImage[] toImage(org.dasein.cloud.digitalocean.models.Image instance) {
         if( instance == null ) {
             return null;
         }
@@ -344,7 +344,7 @@ public class DOImage extends AbstractImageSupport {
         return res;
 	}
     
-    private ResourceStatus toStatus(com.acentera.models.digitalocean.Image instance) {
+    private ResourceStatus toStatus(org.dasein.cloud.digitalocean.models.Image instance) {
         if( instance == null ) {
             return null;
         }
@@ -493,12 +493,12 @@ public class DOImage extends AbstractImageSupport {
 
             try {
             	
-            	Images images = (Images)DigitalOceanModelFactory.getModel(getProvider(), com.acentera.models.DigitalOcean.IMAGES );
+            	Images images = (Images)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES );
             	if (images != null) {
-	            	Set<com.acentera.models.digitalocean.Image> s = images.getImages();
-	            	Iterator<com.acentera.models.digitalocean.Image> itr = s.iterator();
+	            	Set<org.dasein.cloud.digitalocean.models.Image> s = images.getImages();
+	            	Iterator<org.dasein.cloud.digitalocean.models.Image> itr = s.iterator();
 	            	while(itr.hasNext()) {
-	            		com.acentera.models.digitalocean.Image d = itr.next();
+	            		org.dasein.cloud.digitalocean.models.Image d = itr.next();
 	            		ResourceStatus status = toStatus(d);
 	            		if( status != null ) {
 	                        list.add(status);

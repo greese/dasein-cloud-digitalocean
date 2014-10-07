@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2009-2014 Dell, Inc.
+
  * See annotations for authorship information
  *
  * ====================================================================
@@ -35,6 +36,14 @@ import org.dasein.cloud.OperationNotSupportedException;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.Requirement;
 import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.models.Action;
+import org.dasein.cloud.digitalocean.models.Droplet;
+import org.dasein.cloud.digitalocean.models.Key;
+import org.dasein.cloud.digitalocean.models.Keys;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Resize;
+import org.dasein.cloud.digitalocean.models.actions.sshkey.Create;
+import org.dasein.cloud.digitalocean.models.actions.sshkey.Destroy;
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.SSHKeypair;
 import org.dasein.cloud.identity.ServiceAction;
 import org.dasein.cloud.identity.ShellKeySupport;
@@ -43,14 +52,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.acentera.models.DigitalOceanModelFactory;
-import com.acentera.models.digitalocean.Action;
-import com.acentera.models.digitalocean.Droplet;
-import com.acentera.models.digitalocean.Key;
-import com.acentera.models.digitalocean.Keys;
-import com.acentera.models.digitalocean.actions.droplet.Resize;
-import com.acentera.models.digitalocean.actions.key.Create;
-import com.acentera.models.digitalocean.actions.key.Destroy;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -71,7 +72,7 @@ public class Keypairs implements ShellKeySupport {
         	
         	try {
         		
-    			Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.KEYS);
+    			Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
             	
             	if (kSet == null) {
             		throw new CloudException("Key item waas not found on " + provider.getCloudName());
@@ -120,7 +121,7 @@ public class Keypairs implements ShellKeySupport {
             }
             try {
  	           
-            	Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.KEYS);
+            	Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
             	
             	if (kSet == null) {
             		return null;            		
@@ -169,7 +170,7 @@ public class Keypairs implements ShellKeySupport {
                 
             	
             
-            	Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.KEYS);
+            	Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
             	
             	if (kSet == null) {
             		return null;            		
@@ -231,7 +232,7 @@ public class Keypairs implements ShellKeySupport {
             try {
             	Create action = new Create(name, material);            
             	
-            	Key k = (Key)DigitalOceanModelFactory.performAction(provider, action, com.acentera.models.DigitalOcean.KEY);
+            	Key k = (Key)DigitalOceanModelFactory.performAction(provider, action, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEY);
             	
                 SSHKeypair key = new SSHKeypair();
 
@@ -275,7 +276,7 @@ public class Keypairs implements ShellKeySupport {
             
             Keys kSet;
 			try {
-				kSet = (Keys) DigitalOceanModelFactory.getModel(provider, com.acentera.models.DigitalOcean.KEYS);
+				kSet = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
 				
 	        	if (kSet == null) {
 	        		return null;            		
