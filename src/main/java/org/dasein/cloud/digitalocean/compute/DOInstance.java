@@ -282,7 +282,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             	Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + architecture.name(), VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
                 Iterable<VirtualMachineProduct> products = cache.get(getContext());
 
-                //if( products == null ) {                    
+                if( products == null ) {                    
 
                     try {
                         InputStream input = DigitalOcean.class.getResourceAsStream(resource);
@@ -374,13 +374,16 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                                     list.add(prd);
                                 }
                             }
+                            products = list;
+                            cache.put(getContext(), products);
                         }
                         else {
                             logger.warn("No standard products resource exists for " + resource);
                         }
 
-                        return list;
-                        //cache.put(getContext(), products);
+                        
+                        
+                        return products;
                     }
                     catch( IOException e ) {
                     	e.printStackTrace();
@@ -390,7 +393,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                     	e.printStackTrace();
                         throw new InternalException(e);
                     }
-                //}                
+                }
             }
 
             return list;        	
