@@ -63,8 +63,9 @@ public class DigitalOceanModelFactory {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout+ ")");
         }
 
-			//Ignore pagination use of per_page=-1 for all requests
-			String strUrl = endpoint + "?per_page=-1";						
+			//Ignore pagination use of per_page=-1 for all requests not consistent... ie images didn't work so using 99999999 instead
+		    //
+			String strUrl = endpoint + "?per_page=99999999";						
 				
 			if( logger.isTraceEnabled() ) {
 				logger.trace("CALLING - " + method + " "  + endpoint);
