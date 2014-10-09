@@ -18,6 +18,8 @@
  */
 package org.dasein.cloud.digitalocean.models;
 
+import java.util.Date;
+
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 	
 public class Image implements DigitalOceanRestModel {
@@ -27,10 +29,13 @@ public class Image implements DigitalOceanRestModel {
 	String distribution;
 	Boolean isPublic;	
 	String[] regions;
+	Date created_at;
 	
 	public String getId() {
 		return this.id;
 	}
+	
+	
 	
 	public String getSlug() {
 		return this.slug;
@@ -66,6 +71,12 @@ public class Image implements DigitalOceanRestModel {
 	}
 	public void setDistribution(String b) {
 		this.distribution = b;
+	}
+
+
+
+	public long getCreatedAt() {
+		return this.created_at.getTime();		
 	}
 	
 }
