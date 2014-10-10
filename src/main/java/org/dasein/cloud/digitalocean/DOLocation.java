@@ -5,9 +5,7 @@ import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.compute.VirtualMachineProduct;
-import org.dasein.cloud.dc.DataCenter;
-import org.dasein.cloud.dc.DataCenterServices;
-import org.dasein.cloud.dc.Region;
+import org.dasein.cloud.dc.*;
 import org.dasein.cloud.digitalocean.models.Regions;
 import org.dasein.cloud.digitalocean.models.Size;
 import org.dasein.cloud.digitalocean.models.Sizes;
@@ -25,18 +23,24 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 public class DOLocation implements DataCenterServices {
     static private final Logger logger = DigitalOcean.getLogger(DOLocation.class);
 
     private DigitalOcean provider;
+    private transient volatile DODataCenterCapabilities capabilities;
 
     DOLocation(@Nonnull DigitalOcean provider) { this.provider = provider; }
+
+    @Nonnull
+    @Override
+    public DataCenterCapabilities getCapabilities() throws InternalException, CloudException {
+        if( capabilities == null ) {
+            capabilities = new DODataCenterCapabilities(provider);
+        }
+        return capabilities;
+    }
 
     @Override
     public @Nullable DataCenter getDataCenter(@Nonnull String dataCenterId) throws InternalException, CloudException {
@@ -154,7 +158,43 @@ public class DOLocation implements DataCenterServices {
             APITrace.end();
         }
     }
-    
+
+    @Nonnull
+    @Override
+    public Collection<ResourcePool> listResourcePools(String providerDataCenterId) throws InternalException, CloudException {
+        throw new CloudException(provider.getCloudName() + " does not support resource pools");
+    }
+
+    @Nullable
+    @Override
+    public ResourcePool getResourcePool(String providerResourcePoolId) throws InternalException, CloudException {
+        throw new CloudException(provider.getCloudName() + " does not support resource pools");
+    }
+
+    @Nonnull
+    @Override
+    public Collection<StoragePool> listStoragePools() throws InternalException, CloudException {
+        throw new CloudException(provider.getCloudName() + " does not support storage pools");
+    }
+
+    @Nonnull
+    @Override
+    public StoragePool getStoragePool(String providerStoragePoolId) throws InternalException, CloudException {
+        throw new CloudException(provider.getCloudName() + " does not support storage pools");
+    }
+
+    @Nonnull
+    @Override
+    public Collection<Folder> listVMFolders() throws InternalException, CloudException {
+        throw new CloudException(provider.getCloudName() + " does not support vm folders");
+    }
+
+    @Nonnull
+    @Override
+    public Folder getVMFolder(String providerVMFolderId) throws InternalException, CloudException {
+        throw new CloudException(provider.getCloudName() + " does not support vm folders");
+    }
+
     public DataCenter toDatacenter(org.dasein.cloud.digitalocean.models.Region r) {
     	
     	DataCenter dc = new DataCenter();

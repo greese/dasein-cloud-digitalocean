@@ -127,7 +127,7 @@ public class DigitalOcean extends AbstractCloud {
     @Override
     public @Nonnull String getCloudName() {
         ProviderContext ctx = getContext();
-        String name = (ctx == null ? null : ctx.getCloudName());
+        String name = (ctx == null ? null : ctx.getCloud().getCloudName());
 
         return (name == null ? "DigitalOcean" : name);
     }
