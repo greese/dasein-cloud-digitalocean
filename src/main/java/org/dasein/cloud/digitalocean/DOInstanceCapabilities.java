@@ -19,12 +19,8 @@
 
 package org.dasein.cloud.digitalocean;
 
-import org.dasein.cloud.AbstractCapabilities;
+import org.dasein.cloud.*;
 
-import org.dasein.cloud.Capabilities;
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.Requirement;
 import org.dasein.cloud.compute.Architecture;
 import org.dasein.cloud.compute.ImageClass;
 import org.dasein.cloud.compute.Platform;
@@ -110,12 +106,22 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public @Nonnull String getProviderTermForVirtualMachine(@Nonnull Locale locale) throws CloudException, InternalException {
-        return "Droplet";
+        return "droplet";
     }
 
     @Override
     public @Nonnull NamingConstraints getVirtualMachineNamingConstraints() {
         return NamingConstraints.getAlphaNumeric(1, 100);
+    }
+
+    @Override
+    public @Nullable VisibleScope getVirtualMachineVisibleScope() {
+        return null;
+    }
+
+    @Override
+    public @Nullable VisibleScope getVirtualMachineProductVisibleScope() {
+        return null;
     }
 
     @Override
@@ -154,7 +160,62 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
         return architectures;
     }
 
-	@Override
+    @Override
+    public boolean supportsSpotVirtualMachines() throws InternalException, CloudException {
+        return false;
+    }
+
+    @Override
+    public boolean supportsAlterVM() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsClone() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsPause() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsReboot() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsResume() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsStart() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsStop() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsSuspend() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsTerminate() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsUnPause() {
+        return false;
+    }
+
+    @Override
 	@Nonnull
 	public Requirement identifyPasswordRequirement(Platform arg0)
 			throws CloudException, InternalException {

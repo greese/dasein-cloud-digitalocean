@@ -26,14 +26,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.SimpleTimeZone;
+import java.util.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,15 +37,7 @@ import org.dasein.cloud.InternalException;
 import org.dasein.cloud.OperationNotSupportedException;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.ResourceStatus;
-import org.dasein.cloud.compute.AbstractVMSupport;
-import org.dasein.cloud.compute.Architecture;
-import org.dasein.cloud.compute.MachineImage;
-import org.dasein.cloud.compute.VMFilterOptions;
-import org.dasein.cloud.compute.VMLaunchOptions;
-import org.dasein.cloud.compute.VMScalingOptions;
-import org.dasein.cloud.compute.VirtualMachine;
-import org.dasein.cloud.compute.VirtualMachineProduct;
-import org.dasein.cloud.compute.VmState;
+import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DOInstanceCapabilities;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.models.Action;
@@ -243,10 +228,11 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     }
 
     @Override
-    public @Nonnull Iterable<VirtualMachineProduct> listProducts(Architecture architecture) throws InternalException, CloudException {
+    public @Nonnull Iterable<VirtualMachineProduct> listProducts(VirtualMachineProductFilterOptions options,
+                                                                 Architecture architecture) throws InternalException, CloudException {
         ProviderContext ctx = getProvider().getContext();
 
-        ArrayList<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
+        List<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
         try {
         	
         	//Lest first check if they want to streamline to use only a specific subset of products... or local cache        	
@@ -257,11 +243,11 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         		}
         		//Perform DigitalOcean query  
         		
-	        	Sizes availablesizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);        	
+	        	Sizes availableSizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
 	        	
-	            if (availablesizes != null) {
+	            if (availableSizes != null) {
 	            
-		            Set<Size> sizes = availablesizes.getSizes();
+		            Set<Size> sizes = availableSizes.getSizes();
 		            Iterator<Size> itr = sizes.iterator();
 		            while(itr.hasNext()) {
 		            	Size s = itr.next();
@@ -369,9 +355,15 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                                     continue;
                                 }
                                 VirtualMachineProduct prd = toProductFromJSON(product);
-
                                 if( prd != null ) {
-                                    list.add(prd);
+                                    if( options != null ) {
+                                        if( options.matches(prd) ) {
+                                            list.add(prd);
+                                        }
+                                    }
+                                    else {
+                                        list.add(prd);
+                                    }
                                 }
                             }
                             products = list;
@@ -381,8 +373,6 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                             logger.warn("No standard products resource exists for " + resource);
                         }
 
-                        
-                        
                         return products;
                     }
                     catch( IOException e ) {
