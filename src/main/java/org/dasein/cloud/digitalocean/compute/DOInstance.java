@@ -224,7 +224,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
     @Override
     public boolean isSubscribed() throws InternalException, CloudException {
-    	throw new OperationNotSupportedException("DigitalOcean instances cannot be subscribed.");
+    return true;
     }
 
     @Override
