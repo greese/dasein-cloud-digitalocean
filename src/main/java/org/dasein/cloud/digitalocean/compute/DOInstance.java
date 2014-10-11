@@ -70,6 +70,7 @@ import org.dasein.cloud.network.IPVersion;
 import org.dasein.cloud.network.IpAddress;
 import org.dasein.cloud.network.IpAddressSupport;
 import org.dasein.cloud.network.NetworkServices;
+import org.dasein.cloud.network.RawAddress;
 import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
 import org.dasein.cloud.util.CacheLevel;
@@ -320,8 +321,6 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                                 if( toCache == null || (provider.equals("default") && cloud.equals("default")) ) {
                                     toCache = productSet;
                                 }
-                                System.out.println("PRoviderName is : " + getProvider().getProviderName() + " vs... " + provider);
-                                System.out.println("Cloud is : " + getProvider().getCloudName() + " vs... " + cloud);
                                 if( provider.equalsIgnoreCase(getProvider().getProviderName()) && cloud.equalsIgnoreCase(getProvider().getCloudName()) ) {
                                     toCache = productSet;
                                     break;
@@ -773,6 +772,17 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         server.setProductId(instance.getSize());        
         server.setDescription(null);
         server.setProviderVirtualMachineId(String.valueOf(instance.getId()));
+        try {
+        	RawAddress r = new RawAddress(instance.getPrivateIp());
+        	server.setPrivateAddresses(r);
+        	
+        } catch (Exception ee) {
+        }
+        
+        	RawAddress pub = new RawAddress(instance.getIp());
+        server.setPublicAddresses(pub);
+        server.setPublicAddresses(pub);
+        server.setPublicDnsAddress(instance.getIp());
         
         /*if( istnance..getPlatform() == null ) {
             server.setPlatform(Platform.UNKNOWN);

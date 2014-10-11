@@ -166,9 +166,12 @@ public class DOImage extends AbstractImageSupport {
                 images.addAll((Collection<MachineImage>)searchPublicImages(ImageFilterOptions.getInstance()));
             }
             images.addAll((Collection<MachineImage>)listImages(ImageFilterOptions.getInstance()));
-
-            for( MachineImage image : images ) {
+                        
+            for( MachineImage image : images ) {            	
                 if(image != null){
+                	if( image.getProviderRegionId().compareTo(provider.getContext().getRegionId()) != 0) {
+                		continue;
+                	}
                     if( keyword != null ) {
                         if( !image.getProviderMachineImageId().contains(keyword) && !image.getName().contains(keyword) && !image.getDescription().contains(keyword) ) {
                             continue;
@@ -274,6 +277,9 @@ public class DOImage extends AbstractImageSupport {
             Iterator<MachineImage> itrMachine = imgList.iterator();
             while(itrMachine.hasNext()) {
             	MachineImage image  = itrMachine.next();
+            	 if( image.getProviderRegionId().compareTo(provider.getContext().getRegionId()) != 0) {
+            		continue;
+            	 }
             	 if( image != null && ( filterOptions != null && filterOptions.matches(image) )) {
                      res.add(image);
                  }
@@ -296,6 +302,7 @@ public class DOImage extends AbstractImageSupport {
                      
         ProviderContext ctx = getProvider().getContext();
                 
+
         MachineImageState mis = MachineImageState.ACTIVE;
         if ( instance.getRegions().length<=0) {
         	mis = MachineImageState.DELETED;
@@ -319,6 +326,7 @@ public class DOImage extends AbstractImageSupport {
 	        } else if (instance.getDistribution().compareToIgnoreCase("Fedora") == 0) {
 	        	platform = Platform.FEDORA_CORE;
 	        }
+
 	        
 	        MachineImage image = MachineImage.getImageInstance(
 	        		ctx.getAccountNumber()
@@ -337,6 +345,7 @@ public class DOImage extends AbstractImageSupport {
 	        if ( pos >= 1) {
 	        	software = instance.getName().substring(0, pos);
 	        }
+	        image.setCreationTimestamp(instance.getCreatedAt());
 	        image.setSoftware(software);
 	        image.setProviderRegionId(instance.getRegions()[i]);
 	        res[i] = image;
@@ -664,11 +673,11 @@ public class DOImage extends AbstractImageSupport {
                             ids.add(img.getProviderMachineImageId());
                             iterator.push(img);
                         }
-                        for( MachineImage img : executeImageSearch(2, false, opts) ) {
+                        /*for( MachineImage img : executeImageSearch(2, false, opts) ) {
                             if( !ids.contains(img.getProviderMachineImageId()) ) {
                                 iterator.push(img);
                             }
-                        }
+                        }*/
                     }
                     finally {
                         provider.release();
@@ -696,9 +705,9 @@ public class DOImage extends AbstractImageSupport {
                         for( MachineImage img : executeImageSearch(1, true, options) ) {
                             iterator.push(img);
                         }
-                        for( MachineImage img : executeImageSearch(2, true, options) ) {
+                       /* for( MachineImage img : executeImageSearch(2, true, options) ) {
                             iterator.push(img);
-                        }
+                        }*/
                     }
                     finally {
                         provider.release();

@@ -110,5 +110,14 @@ public class Droplet implements DigitalOceanRestModel {
 			return "";
 		}
 	}
+
+	public void setPublicIp(String ipAddress) {
+		this.ip_address = ipAddress;
+		
+	}
+	public void setPrivateIp(String ipAddress) {
+		this.private_ip_address = ipAddress;
+		
+	}
 	
 }

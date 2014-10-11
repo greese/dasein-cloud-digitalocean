@@ -18,6 +18,8 @@
  */
 package org.dasein.cloud.digitalocean.models.rest;
 
+import java.util.Date;
+
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.digitalocean.models.Action;
 import org.dasein.cloud.digitalocean.models.Actions;
@@ -37,6 +39,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
 public enum DigitalOcean implements IDigitalOcean {
@@ -57,7 +60,14 @@ public enum DigitalOcean implements IDigitalOcean {
 	KEY;
 	
 
-	static Gson gson = new Gson();				
+	static Gson gson = null;
+	static GsonBuilder gsonBuilder = new GsonBuilder();	
+	static {
+		
+		gsonBuilder.registerTypeAdapter(Date.class, new DateDeserializer());
+		gson = gsonBuilder.create();
+	}
+	
 	@Override
 	public  String toString() {
 		switch(this) {
@@ -92,7 +102,29 @@ public enum DigitalOcean implements IDigitalOcean {
 		switch(this) {
 			case DROPLET: {
 				Object u = gson.fromJson(jso.getJSONObject("droplet").toString(), Droplet.class);
-				return (Droplet)u;
+				Droplet drop = (Droplet)u;
+				
+				try {//V2
+					
+					JSONObject net = jso.getJSONObject("droplet").getJSONObject("networks");
+					JSONArray ipV4 = net.getJSONArray("v4");
+					int len = ipV4.length();
+					for (int z = 0; z < len; z++) {
+						JSONObject netinfo = ipV4.getJSONObject(z);
+						
+						String ipAddress = netinfo.getString("ip_address");
+						String type = netinfo.getString("type");
+						if (type.compareToIgnoreCase("public") == 0) {
+							drop.setPublicIp(ipAddress);
+						} else { 
+							drop.setPrivateIp(ipAddress);
+						}														
+					}
+				} catch (Exception e) {
+					//Couldnt find network?
+					e.printStackTrace();
+				}
+				return drop;
 			}			
 			case DROPLETS: {
 				JSONArray jsArray = jso.getJSONArray("droplets");
@@ -101,14 +133,36 @@ public enum DigitalOcean implements IDigitalOcean {
 				for (int i = 0; i < jsArray.length(); i++) {
 					
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Droplet.class);
-					droplets.addDroplet((Droplet)u);
+					Droplet drop = (Droplet)u;
+					
+					try {//V2
+						JSONObject j = jsArray.getJSONObject(i);
+						JSONObject net = j.getJSONObject("networks");
+						JSONArray ipV4 = net.getJSONArray("v4");
+						int len = ipV4.length();
+						for (int z = 0; z < len; z++) {
+							JSONObject netinfo = ipV4.getJSONObject(z);
+							
+							String ipAddress = netinfo.getString("ip_address");
+							String type = netinfo.getString("type");
+							if (type.compareToIgnoreCase("public") == 0) {
+								drop.setPublicIp(ipAddress);
+							} else { 
+								drop.setPrivateIp(ipAddress);
+							}														
+						}
+					} catch (Exception e) {
+						//Couldnt find network?
+						e.printStackTrace();
+					}
+					droplets.addDroplet(drop);
 				}
 				
 				return droplets;
 			}
 			case SIZE: {
-				Object u = gson.fromJson(jso.getJSONObject("size").toString(), Droplet.class);
-				return (Droplet)u;
+				Object u = gson.fromJson(jso.getJSONObject("size").toString(), Size.class);
+				return (Size)u;
 			}			
 			case SIZES: {
 				JSONArray jsArray = jso.getJSONArray("sizes");
