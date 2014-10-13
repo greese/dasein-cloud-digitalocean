@@ -20,15 +20,13 @@
 package org.dasein.cloud.digitalocean.compute;
 
 
-import org.dasein.cloud.AbstractCapabilities;
+import org.dasein.cloud.*;
 
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.Requirement;
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -65,6 +63,12 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     @Override
     public String getProviderTermForCustomImage(@Nonnull Locale locale, @Nonnull ImageClass imageClass) {
         return getProviderTermForImage(locale, imageClass);
+    }
+
+    @Nullable
+    @Override
+    public VisibleScope getImageVisibleScope() {
+        return null;
     }
 
     @Nonnull

@@ -8,3 +8,6 @@
 *.idea
 target
 .DS_Store
+.classpath
+.settings
+.project

@@ -21,5 +21,5 @@ package org.dasein.cloud.digitalocean;
 
 import org.dasein.cloud.test.GlobalTestSuite;
 
-public class DigitalOceanTestSuite extends GlobalTestSuite {
+public class TestSuite extends GlobalTestSuite {
 }

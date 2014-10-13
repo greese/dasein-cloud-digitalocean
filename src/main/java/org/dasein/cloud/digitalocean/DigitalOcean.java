@@ -127,7 +127,7 @@ public class DigitalOcean extends AbstractCloud {
     @Override
     public @Nonnull String getCloudName() {
         ProviderContext ctx = getContext();
-        String name = (ctx == null ? null : ctx.getCloudName());
+        String name = (ctx == null ? null : ctx.getCloud().getCloudName());
 
         return (name == null ? "DigitalOcean" : name);
     }
@@ -235,10 +235,10 @@ public class DigitalOcean extends AbstractCloud {
         	//TODO: Should we use getCloud()? instead of digitalocean ?
             value = System.getProperty("digitalocean.vmproducts");
         }
-        if( value == null ) {
-        	//We should add this resource as example only if we want to enforce it...
-            value = "/org/dasein/cloud/digitalocean/vmproducts.json";
-        }
+//        if( value == null ) {
+//        	//We should add this resource as example only if we want to enforce it...
+//            value = "/org/dasein/cloud/digitalocean/vmproducts.json";
+//        }
         return value;
     }
 }

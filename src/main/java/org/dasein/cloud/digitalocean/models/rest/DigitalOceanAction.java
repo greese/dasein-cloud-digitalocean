@@ -23,8 +23,6 @@ import org.dasein.cloud.digitalocean.models.IDigitalOcean;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.gson.JsonSyntaxException;
-
 public class DigitalOceanAction implements IDigitalOcean {
 	protected RESTMethod method;
 	protected ActionType actionType;
@@ -40,7 +38,7 @@ public class DigitalOceanAction implements IDigitalOcean {
 		return false;
 	}
 	
-	public DigitalOceanRestModel fromJson(JSONObject jso) throws JsonSyntaxException, JSONException {
+	public DigitalOceanRestModel fromJson(JSONObject jso) throws JSONException {
 		//THIS IS NOT USED SINCE ALL ACTIONS RETURN AN EVENT OBJECT...
 		return null;
 	}
