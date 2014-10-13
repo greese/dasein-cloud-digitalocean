@@ -250,15 +250,16 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         ArrayList<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
         try {
         	
-        	//Lest first check if they want to streamline to use only a specific subset of products... or local cache        	
+        	//Lest first check if they want to streamline to use only a specific subset of products... or local cache
         	String resource = ((DigitalOcean)getProvider()).getVMProductsResource();
         	if (resource == null) {
         		if (logger.isTraceEnabled()) {
         			logger.error("No local file found, will proceed with Cloud API Call. See digitalocean.vmproducts system parameter");
         		}
         		//Perform DigitalOcean query  
-        		
+        	
 	        	Sizes availablesizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);        	
+	        	
 	        	
 	            if (availablesizes != null) {
 	            
@@ -266,6 +267,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 		            Iterator<Size> itr = sizes.iterator();
 		            while(itr.hasNext()) {
 		            	Size s = itr.next();
+		            			            	
 		            	
 		            	VirtualMachineProduct vmp = toProduct(s);
 		            	list.add(vmp);
@@ -278,6 +280,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             	if (logger.isTraceEnabled()) {
         			logger.error("Local file found, will not proceed with Cloud API Call. See digitalocean.vmproducts system parameter");
         		}
+            	
             	
             	
             	Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + architecture.name(), VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
@@ -379,10 +382,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                         else {
                             logger.warn("No standard products resource exists for " + resource);
                         }
-
-                        
-                        
-                        return products;
+                       
                     }
                     catch( IOException e ) {
                     	e.printStackTrace();
@@ -394,9 +394,12 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
                     }
                 }
             }
+        	
 
+        	//TODO: Return only itmes from that region... (context)
             return list;        	
         } catch (UnsupportedEncodingException e) {
+        	e.printStackTrace();
         	 logger.error(e.getMessage());
              throw new CloudException(e);
 		}
@@ -765,24 +768,35 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         
         VirtualMachine server = new VirtualMachine();
 
+        
         server.setPersistent(false);
         server.setProviderOwnerId(ctx.getAccountNumber());
         server.setCurrentState(instance.getStatus());
         server.setName(instance.getName());
-        server.setProductId(instance.getSize());        
+        server.setProductId(instance.getSizeId());        
         server.setDescription(null);
+        server.setProviderDataCenterId(instance.getRegionId());
         server.setProviderVirtualMachineId(String.valueOf(instance.getId()));
+        server.setProviderMachineImageId(instance.getImageId());
         try {
-        	RawAddress r = new RawAddress(instance.getPrivateIp());
-        	server.setPrivateAddresses(r);
-        	
+        	if (instance.getPrivateIp() != null) {
+	        	RawAddress r = new RawAddress(instance.getPrivateIp());
+	        	server.setPrivateAddresses(r);        	
+        	}
         } catch (Exception ee) {
+        	ee.printStackTrace();
         }
         
-        	RawAddress pub = new RawAddress(instance.getIp());
-        server.setPublicAddresses(pub);
-        server.setPublicAddresses(pub);
-        server.setPublicDnsAddress(instance.getIp());
+        try {
+	        if (instance.getIp() != null) {
+	        	RawAddress pub = new RawAddress(instance.getIp());
+	        	server.setPublicAddresses(pub);
+	        	server.setPublicAddresses(pub);
+	        	server.setPublicDnsAddress(instance.getIp());
+	        }
+        } catch (Exception ee) {
+        	ee.printStackTrace();
+        }
         
         /*if( istnance..getPlatform() == null ) {
             server.setPlatform(Platform.UNKNOWN);

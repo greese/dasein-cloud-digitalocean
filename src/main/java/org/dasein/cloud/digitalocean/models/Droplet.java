@@ -27,8 +27,8 @@ import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 public class Droplet implements DigitalOceanRestModel {
 	Long id;
 	String name;
-	Long image_id;
-	Long region_id;
+	Region  region;
+	Image  image;
 	Size size;
 	String ip_address;
 	String private_ip_address;
@@ -45,21 +45,25 @@ public class Droplet implements DigitalOceanRestModel {
 		return this.name;
 	}
 	
-	public String getSize() {
+	public Size getSize() {
+		return this.size;
+	}
+	
+	public String getSizeId() {
 		return this.size.getSlug();
 	}
 	public void setSize(Size s) {
 		this.size = s;
 	}
 	
-	public Long getImageId() {
-		return this.image_id;
-	}
-
-	public Long getRegionId() {
-		return this.region_id;
+	public String getImageId() {
+		return this.image.getId();
 	}
 	
+	public Image getImage() {
+		return this.image;
+	}
+
 	public String getPrivateIp() {
 		if (this.private_ip_address == null) {
 			return this.getIp();
@@ -118,6 +122,18 @@ public class Droplet implements DigitalOceanRestModel {
 	public void setPrivateIp(String ipAddress) {
 		this.private_ip_address = ipAddress;
 		
+	}
+
+	public void setRegion(Region reg) {
+		this.region = reg;
+	}
+	
+	public String getRegionId() {
+		return this.region.getSlug();
+	}
+	
+	public Region getRegion() {
+		return this.region;
 	}
 	
 }

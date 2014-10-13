@@ -235,10 +235,11 @@ public class DigitalOcean extends AbstractCloud {
         	//TODO: Should we use getCloud()? instead of digitalocean ?
             value = System.getProperty("digitalocean.vmproducts");
         }
-        if( value == null ) {
+        /*if( value == null ) {
         	//We should add this resource as example only if we want to enforce it...
             value = "/org/dasein/cloud/digitalocean/vmproducts.json";
-        }
+            //If we use this value, we should make sure file exist other wise return null so we use the API...
+        }*/
         return value;
     }
 }

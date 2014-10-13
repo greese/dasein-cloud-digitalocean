@@ -101,29 +101,8 @@ public enum DigitalOcean implements IDigitalOcean {
 		
 		switch(this) {
 			case DROPLET: {
-				Object u = gson.fromJson(jso.getJSONObject("droplet").toString(), Droplet.class);
-				Droplet drop = (Droplet)u;
 				
-				try {//V2
-					
-					JSONObject net = jso.getJSONObject("droplet").getJSONObject("networks");
-					JSONArray ipV4 = net.getJSONArray("v4");
-					int len = ipV4.length();
-					for (int z = 0; z < len; z++) {
-						JSONObject netinfo = ipV4.getJSONObject(z);
-						
-						String ipAddress = netinfo.getString("ip_address");
-						String type = netinfo.getString("type");
-						if (type.compareToIgnoreCase("public") == 0) {
-							drop.setPublicIp(ipAddress);
-						} else { 
-							drop.setPrivateIp(ipAddress);
-						}														
-					}
-				} catch (Exception e) {
-					//Couldnt find network?
-					e.printStackTrace();
-				}
+				Droplet drop = toDroplet(jso.getJSONObject("droplet"));
 				return drop;
 			}			
 			case DROPLETS: {
@@ -132,29 +111,7 @@ public enum DigitalOcean implements IDigitalOcean {
 						
 				for (int i = 0; i < jsArray.length(); i++) {
 					
-					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Droplet.class);
-					Droplet drop = (Droplet)u;
-					
-					try {//V2
-						JSONObject j = jsArray.getJSONObject(i);
-						JSONObject net = j.getJSONObject("networks");
-						JSONArray ipV4 = net.getJSONArray("v4");
-						int len = ipV4.length();
-						for (int z = 0; z < len; z++) {
-							JSONObject netinfo = ipV4.getJSONObject(z);
-							
-							String ipAddress = netinfo.getString("ip_address");
-							String type = netinfo.getString("type");
-							if (type.compareToIgnoreCase("public") == 0) {
-								drop.setPublicIp(ipAddress);
-							} else { 
-								drop.setPrivateIp(ipAddress);
-							}														
-						}
-					} catch (Exception e) {
-						//Couldnt find network?
-						e.printStackTrace();
-					}
+					Droplet drop = toDroplet(jsArray.getJSONObject(i));					
 					droplets.addDroplet(drop);
 				}
 				
@@ -248,6 +205,40 @@ public enum DigitalOcean implements IDigitalOcean {
 			}
 			default: throw new IllegalArgumentException("DigitalOcean JSON to Object not implemented");
 		}		
+	}
+
+	private Droplet toDroplet(JSONObject jso) throws JsonSyntaxException, JSONException {
+		Droplet drop = (Droplet)gson.fromJson(jso.toString(), Droplet.class);
+		
+		//V2
+		//Get Networking
+		try {			
+			JSONObject net = jso.getJSONObject("networks");
+			if (net.has("v4")) {
+				JSONArray ipV4 = net.getJSONArray("v4");
+				int len = ipV4.length();
+				for (int z = 0; z < len; z++) {
+					JSONObject netinfo = ipV4.getJSONObject(z);
+					
+					String ipAddress = netinfo.getString("ip_address");
+					String type = netinfo.getString("type");
+					if (type.compareToIgnoreCase("public") == 0) {
+						drop.setPublicIp(ipAddress);
+					} else { 
+						drop.setPrivateIp(ipAddress);
+					}														
+				}
+			}
+			//TODO v6?
+		} catch (Exception e) {
+			//Couldnt find network?
+		}
+		
+		
+		
+		
+
+		return drop;
 	}
 }
 
