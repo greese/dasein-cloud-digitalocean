@@ -36,6 +36,7 @@ import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
 import org.dasein.cloud.util.CacheLevel;
 import org.dasein.util.*;
+import org.dasein.util.uom.time.Hour;
 import org.dasein.util.uom.time.Minute;
 import org.dasein.util.uom.time.TimePeriod;
 import org.w3c.dom.Document;
@@ -165,6 +166,9 @@ public class DOImage extends AbstractImageSupport {
             if(accountNumber == null){
                 images.addAll((Collection<MachineImage>)searchPublicImages(ImageFilterOptions.getInstance()));
             }
+            
+
+        	
             images.addAll((Collection<MachineImage>)listImages(ImageFilterOptions.getInstance()));
                         
             for( MachineImage image : images ) {            	
@@ -233,9 +237,10 @@ public class DOImage extends AbstractImageSupport {
                 }
             }
             
-            Cache<MachineImage> cache = Cache.getInstance(provider, "images", MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
+            Cache<MachineImage> cache = Cache.getInstance(provider, "images", MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Hour>(5, TimePeriod.HOUR));
             Collection<MachineImage> imgList = (Collection<MachineImage>)cache.get(ctx);
 
+            
             if( imgList == null ) {                           
             
 		            final ArrayList<MachineImage> list = new ArrayList<MachineImage>();
@@ -249,6 +254,7 @@ public class DOImage extends AbstractImageSupport {
 			            	Iterator<org.dasein.cloud.digitalocean.models.Image> itr = s.iterator();
 			            	while(itr.hasNext()) {
 			            		org.dasein.cloud.digitalocean.models.Image d = itr.next();
+			            		try {
 			            		MachineImage[] status = toImage(d);
 			            		if( status != null ) {
 			            			int len = status.length;
@@ -256,6 +262,9 @@ public class DOImage extends AbstractImageSupport {
 			            				list.add(status[i]);
 			            			}
 			                    }
+			            		} catch (Exception ew) {
+			            			ew.printStackTrace();
+			            		}
 			            	}
 		            	}
 		            	

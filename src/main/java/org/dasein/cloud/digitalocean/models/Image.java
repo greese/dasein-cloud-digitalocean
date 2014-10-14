@@ -76,7 +76,10 @@ public class Image implements DigitalOceanRestModel {
 
 
 	public long getCreatedAt() {
-		return this.created_at.getTime();		
+		if (this.created_at != null) {
+			return this.created_at.getTime();
+		} 
+		return 0;
 	}
 	
 }
