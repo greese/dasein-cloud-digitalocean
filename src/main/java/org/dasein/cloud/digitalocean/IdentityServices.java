@@ -27,14 +27,6 @@ public class IdentityServices extends AbstractIdentityServices {
     private DigitalOcean cloud;
     
     public IdentityServices(DigitalOcean cloud) { this.cloud = cloud; }
-    
-    @Override
-    public DOIdentity getIdentityAndAccessSupport() {
-        if( cloud.getEC2Provider().isAWS() || cloud.getEC2Provider().isEnStratus() ) {
-            return new DOIdentity(cloud);
-        }
-        return null;
-    }
 
     @Override
     public Keypairs getShellKeySupport() {
