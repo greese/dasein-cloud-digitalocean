@@ -72,13 +72,13 @@
         <priority value="DEBUG" />
         <appender-ref ref="ASYNCUNIT" />
     </category>
-    
-    <category name="dasein.cloud.skeleton.std">
+
+    <category name="dasein.cloud.digitalocean.std">
         <priority value="TRACE" />
         <appender-ref ref="ASYNCDASEIN" />
     </category>
 
-    <category name="dasein.cloud.skeleton.wire">
+    <category name="dasein.cloud.digitalocean.wire">
         <priority value="DEBUG" />
         <appender-ref ref="ASYNCWIRE" />
     </category>

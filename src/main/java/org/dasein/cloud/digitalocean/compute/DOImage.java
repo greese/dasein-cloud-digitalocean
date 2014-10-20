@@ -1,5 +1,6 @@
 /**
- * Copyright (C) 2014 ACenterA, Inc. 
+ * Copyright (C) 2009-2014 Dell, Inc.
+ * Copyright (C) 2014 ACenterA, Inc.
  *
  * See annotations for authorship information
  *
@@ -21,34 +22,23 @@
 package org.dasein.cloud.digitalocean.compute;
 
 import org.apache.log4j.Logger;
-
 import org.dasein.cloud.*;
 import org.dasein.cloud.compute.*;
-import org.dasein.cloud.dc.DataCenter;
 import org.dasein.cloud.digitalocean.DigitalOcean;
-import org.dasein.cloud.digitalocean.models.Action;
-import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.Images;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Stop;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.ServiceAction;
 import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
 import org.dasein.cloud.util.CacheLevel;
-import org.dasein.util.*;
+import org.dasein.util.Jiterator;
+import org.dasein.util.JiteratorPopulator;
+import org.dasein.util.PopulatorThread;
 import org.dasein.util.uom.time.Minute;
 import org.dasein.util.uom.time.TimePeriod;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.naming.OperationNotSupportedException;
-
-import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class DOImage extends AbstractImageSupport {
@@ -64,12 +54,12 @@ public class DOImage extends AbstractImageSupport {
 
     @Override
     public void addImageShare(@Nonnull String providerImageId, @Nonnull String accountNumber) throws CloudException, InternalException {
-        throw new CloudException("This provider does not support adding images");
+        throw new OperationNotSupportedException("Image sharing is not supported by "+getProvider().getCloudName());
     }
 
     @Override
     public void addPublicShare(@Nonnull String providerImageId) throws CloudException, InternalException {
-        throw new CloudException("This provider does not support adding images");
+        throw new OperationNotSupportedException("Image sharing is not supported by "+getProvider().getCloudName());
     }
 
     @Override
@@ -83,7 +73,6 @@ public class DOImage extends AbstractImageSupport {
     @Override
     protected MachineImage capture(@Nonnull ImageCreateOptions options, @Nullable AsynchronousTask<MachineImage> task) throws CloudException, InternalException {
         ProviderContext ctx = provider.getContext();
-
         if (ctx == null) {
             throw new CloudException("No context was set for this request");
         }
@@ -93,70 +82,8 @@ public class DOImage extends AbstractImageSupport {
     private
     @Nonnull
     MachineImage captureImage(@Nonnull ProviderContext ctx, @Nonnull ImageCreateOptions options, @Nullable AsynchronousTask<MachineImage> task) throws CloudException, InternalException {
-        throw new CloudException("No captureImage enabled API on specified cloud provider");
-        /*occurred during imaging, but no machine image was specified");
-        APITrace.begin(provider, "captureImage");
-        
-        try {
-            if( task != null ) {
-                task.setStartTime(System.currentTimeMillis());
-            }
-            VirtualMachine vm = null;
-
-            long timeout = System.currentTimeMillis() + (CalendarWrapper.MINUTE * 30L);
-
-            while( timeout > System.currentTimeMillis() ) {
-                try {
-                    //noinspection ConstantConditions
-                    vm = provider.getComputeServices().getVirtualMachineSupport().getVirtualMachine(options.getVirtualMachineId());
-                    if( vm == null || VmState.TERMINATED.equals(vm.getCurrentState()) ) {
-                        break;
-                    }
-                    
-                    if( VmState.RUNNING.equals(vm.getCurrentState()) || VmState.STOPPED.equals(vm.getCurrentState()) ) {
-                        break;
-                    }
-                }
-                catch( Throwable ignore ) {
-                    // ignore
-                }
-                try { Thread.sleep(15000L); }
-                catch( InterruptedException ignore ) { }
-            }
-            if( vm == null ) {
-                throw new CloudException("No such virtual machine: " + options.getVirtualMachineId());
-            }
-            String lastMessage = null;
-            int attempts = 5;
-
-            //while( attempts > 0 ) {
-
-            	
-            	Snapshot action = new Snapshot();
-            	           
-                try {
-                	Action evt = DigitalOceanModelFactory.performAction(getProvider(), action, instanceId);                	
-                } catch (UnsupportedEncodingException e) {
-                	 logger.error(e.getMessage());
-                     throw new CloudException(e);
-				}
-                
-                
-            //}
-            if( lastMessage == null ) {
-                lastMessage = "Unknown error";
-            }
-            throw new CloudException(lastMessage);
-        }
-        finally {
-            APITrace.end();
-        }*/
+        throw new OperationNotSupportedException("Image capture is not supported by "+getProvider().getCloudName());
     }
-
-    private MachineImage captureWindows(@Nonnull ProviderContext ctx, @Nonnull ImageCreateOptions options, @Nonnull String bucket, @Nullable AsynchronousTask<MachineImage> task) throws CloudException, InternalException {
-        throw new CloudException("No captureImage enabled API on specified cloud provider");
-    }
-
 
     @Override
     public
@@ -233,13 +160,11 @@ public class DOImage extends AbstractImageSupport {
                 }
             }
 
-            Cache<MachineImage> cache = Cache.getInstance(provider, "images", MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
+            Cache<MachineImage> cache = Cache.getInstance(provider, "images"+regionId, MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
             Collection<MachineImage> imgList = (Collection<MachineImage>) cache.get(ctx);
 
+            final List<MachineImage> listAll = new ArrayList<MachineImage>();
             if (imgList == null) {
-
-                final ArrayList<MachineImage> list = new ArrayList<MachineImage>();
-
                 try {
                     Images images = (Images) DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES);
                     if (images != null) {
@@ -247,104 +172,93 @@ public class DOImage extends AbstractImageSupport {
                         Iterator<org.dasein.cloud.digitalocean.models.Image> itr = s.iterator();
                         while (itr.hasNext()) {
                             org.dasein.cloud.digitalocean.models.Image d = itr.next();
-                            MachineImage[] status = toImage(d);
-                            if (status != null) {
-                                int len = status.length;
-                                for (int i = 0; i < len; i++) {
-                                    list.add(status[i]);
-                                }
+                            MachineImage machineImage = toImage(d);
+                            if( machineImage != null ) {
+                                listAll.add(machineImage);
                             }
                         }
                     }
-
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                     throw new CloudException(e);
                 }
 
-
-                cache.put(ctx, list);
-                imgList = list;
+                cache.put(ctx, listAll);
+                imgList = listAll;
             }
 
-            Map<String, String> parameters = new HashMap<String, String>();
-            final ImageFilterOptions filterOptions = fillImageFilterParameters(forPublic, options, parameters);
-
-            final ArrayList<MachineImage> res = new ArrayList<MachineImage>();
+            // now build a filtered list of images
+            final List<MachineImage> res = new ArrayList<MachineImage>();
 
             Iterator<MachineImage> itrMachine = imgList.iterator();
             while (itrMachine.hasNext()) {
                 MachineImage image = itrMachine.next();
-                if (image != null && (filterOptions != null && filterOptions.matches(image))) {
-                    res.add(image);
+                if (image != null) {
+                    if( options != null ) {
+                        if( options.matches(image) ) {
+                            res.add(image);
+                        }
+                    }
+                    else {
+                        res.add(image);
+                    }
                 }
             }
-
             return res;
-
-
         } finally {
             APITrace.end();
         }
     }
 
-    private MachineImage[] toImage(org.dasein.cloud.digitalocean.models.Image instance) {
+    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image instance) {
         if (instance == null) {
             return null;
         }
 
         ProviderContext ctx = getProvider().getContext();
+        String regionId = ctx.getRegionId();
 
-        MachineImageState mis = MachineImageState.ACTIVE;
-        if (instance.getRegions().length == 0) {
+        if( !Arrays.asList(instance.getRegions()).contains(regionId) ) {
             return null;
         }
 
-        int nbImages = instance.getRegions().length;
-        MachineImage[] res = new MachineImage[nbImages];
-        for (int i = 0; i < nbImages; i++) {
+        MachineImageState mis = MachineImageState.ACTIVE;
 
-            Architecture arch = Architecture.I64;
-            if (instance.getName().contains("x32")) {
-                arch = Architecture.I32;
-            }
-
-            Platform platform = Platform.UNKNOWN;
-            if (instance.getDistribution().compareToIgnoreCase("Ubuntu") == 0) {
-                platform = Platform.UBUNTU;
-            } else if (instance.getDistribution().compareToIgnoreCase("CentOS") == 0) {
-                platform = Platform.CENT_OS;
-            } else if (instance.getDistribution().compareToIgnoreCase("Fedora") == 0) {
-                platform = Platform.FEDORA_CORE;
-            }
-            String regionId = instance.getRegions()[i];
-            if( regionId == null ) {
-                regionId = ctx.getRegionId();
-            }
-
-            MachineImage image = MachineImage.getImageInstance(
-                    ctx.getAccountNumber(),
-                    regionId,
-                    instance.getId(),
-                    ImageClass.MACHINE,
-                    mis,
-                    instance.getName(),
-                    instance.getDistribution(),
-                    arch,
-                    platform,
-                    MachineImageFormat.RAW
-            );
-            String software = null;
-            int pos = instance.getName().indexOf(" on ");
-            if (pos >= 1) {
-                software = instance.getName().substring(0, pos);
-            }
-            if( software != null ) {
-                image.withSoftware(software);
-            }
-            res[i] = image;
+        Architecture arch = Architecture.I64;
+        if (instance.getName().contains("x32")) {
+            arch = Architecture.I32;
         }
-        return res;
+
+        Platform platform = Platform.UNKNOWN;
+        if (instance.getDistribution().compareToIgnoreCase("Ubuntu") == 0) {
+            platform = Platform.UBUNTU;
+        } else if (instance.getDistribution().compareToIgnoreCase("CentOS") == 0) {
+            platform = Platform.CENT_OS;
+        } else if (instance.getDistribution().compareToIgnoreCase("Fedora") == 0) {
+            platform = Platform.FEDORA_CORE;
+        }
+
+        MachineImage image = MachineImage.getImageInstance(
+                ctx.getAccountNumber(),
+                regionId,
+                instance.getId(),
+                ImageClass.MACHINE,
+                mis,
+                instance.getName(),
+                instance.getDistribution(),
+                arch,
+                platform,
+                MachineImageFormat.RAW
+        );
+        String software = null;
+        int pos = instance.getName().indexOf(" on ");
+        if (pos >= 1) {
+            software = instance.getName().substring(0, pos);
+        }
+        if (software != null) {
+            image.withSoftware(software);
+        }
+        return image;
     }
 
     private ResourceStatus toStatus(org.dasein.cloud.digitalocean.models.Image instance) {
@@ -389,41 +303,6 @@ public class DOImage extends AbstractImageSupport {
     }
 
     @Override
-    public
-    @Nonnull
-    String getProviderTermForImage(@Nonnull Locale locale) {
-        return getProviderTermForImage(locale, ImageClass.MACHINE);
-    }
-
-    @Override
-    @Deprecated
-    public
-    @Nonnull
-    String getProviderTermForImage(@Nonnull Locale locale, @Nonnull ImageClass cls) {
-        return getCapabilities().getProviderTermForImage(locale, cls);
-    }
-
-    @Override
-    @Deprecated
-    public
-    @Nonnull
-    String getProviderTermForCustomImage(@Nonnull Locale locale, @Nonnull ImageClass cls) {
-        return getCapabilities().getProviderTermForCustomImage(locale, cls);
-    }
-
-    @Override
-    public boolean hasPublicLibrary() {
-        return true;
-    }
-
-    @Override
-    public
-    @Nonnull
-    Requirement identifyLocalBundlingRequirement() throws CloudException, InternalException {
-        return getCapabilities().identifyLocalBundlingRequirement();
-    }
-
-    @Override
     public boolean isImageSharedWithPublic(@Nonnull String machineImageId) throws CloudException, InternalException {
         APITrace.begin(provider, "Image.isImageSharedWithPublic");
         try {
@@ -445,9 +324,8 @@ public class DOImage extends AbstractImageSupport {
         return true;
     }
 
-    public
-    @Nonnull
-    Iterable<ResourceStatus> listImageStatus(final @Nonnull ImageClass cls) throws CloudException, InternalException {
+    @Override
+    public @Nonnull Iterable<ResourceStatus> listImageStatus(final @Nonnull ImageClass cls) throws CloudException, InternalException {
         provider.hold();
         PopulatorThread<ResourceStatus> populator = new PopulatorThread<ResourceStatus>(new JiteratorPopulator<ResourceStatus>() {
             @Override
@@ -480,9 +358,7 @@ public class DOImage extends AbstractImageSupport {
 
     }
 
-    private
-    @Nonnull
-    Iterable<ResourceStatus> executeStatusList(int pass, @Nonnull ImageClass cls) throws CloudException, InternalException {
+    private @Nonnull Iterable<ResourceStatus> executeStatusList(int pass, @Nonnull ImageClass cls) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "Image.executeStatusList");
         try {
             ProviderContext ctx = provider.getContext();
@@ -527,114 +403,11 @@ public class DOImage extends AbstractImageSupport {
         }
     }
 
-    private
-    @Nonnull
-    ImageFilterOptions fillImageFilterParameters(boolean forPublic, @Nonnull ImageFilterOptions options, @Nonnull Map<String, String> parameters) throws CloudException, InternalException {
-        int filter = 1;
-
-        if (forPublic) {
-            parameters.put("Filter." + filter + ".Name", "state");
-            parameters.put("Filter." + (filter++) + ".Value.1", "available");
-        }
-
-        if (options.isMatchesAny() && options.getCriteriaCount() > 1) {
-            if (forPublic) {
-                return options;
-            } else {
-                options.withAccountNumber(getContext().getAccountNumber());
-                return options;
-            }
-        }
-
-        String owner = options.getAccountNumber();
-
-        if (owner != null) {
-            parameters.put("Owner", owner);
-        }
-
-        Architecture architecture = options.getArchitecture();
-
-        if (architecture != null && (architecture.equals(Architecture.I32) || architecture.equals(Architecture.I64))) {
-            parameters.put("Filter." + filter + ".Name", "architecture");
-            parameters.put("Filter." + (filter++) + ".Value.1", Architecture.I32.equals(options.getArchitecture()) ? "i386" : "x86_64");
-        }
-
-        Platform platform = options.getPlatform();
-
-        if (platform != null && platform.equals(Platform.WINDOWS)) {
-            parameters.put("Filter." + filter + ".Name", "platform");
-            parameters.put("Filter." + (filter++) + ".Value.1", "windows");
-        }
-
-        ImageClass cls = options.getImageClass();
-        String t = "machine";
-
-        if (cls != null) {
-            switch (cls) {
-                case MACHINE:
-                    t = "machine";
-                    break;
-                case KERNEL:
-                    t = "kernel";
-                    break;
-                case RAMDISK:
-                    t = "ramdisk";
-                    break;
-            }
-            parameters.put("Filter." + filter + ".Name", "image-type");
-            parameters.put("Filter." + (filter++) + ".Value.1", t);
-        }
-
-        Map<String, String> extraParameters = new HashMap<String, String>();
-
-        parameters.putAll(extraParameters);
-        String regex = options.getRegex();
-
-        options = ImageFilterOptions.getInstance();
-
-        if (regex != null) {
-            options.matchingRegex(regex);
-        }
-        if (platform != null) {
-            options.onPlatform(platform);
-        }
-        return options;
-    }
-
     @Override
     public
     @Nonnull
     Iterable<String> listShares(@Nonnull String forMachineImageId) throws CloudException, InternalException {
-        return sharesAsList(forMachineImageId);
-    }
-
-    @Override
-    public
-    @Nonnull
-    Iterable<ImageClass> listSupportedImageClasses() throws CloudException, InternalException {
-        return getCapabilities().listSupportedImageClasses();
-    }
-
-
-    @Override
-    public
-    @Nonnull
-    Iterable<MachineImageType> listSupportedImageTypes() throws CloudException, InternalException {
-        return getCapabilities().listSupportedImageTypes();
-    }
-
-    @Override
-    public
-    @Nonnull
-    Iterable<MachineImageFormat> listSupportedFormats() throws CloudException, InternalException {
-        return getCapabilities().listSupportedFormats();
-    }
-
-    @Override
-    public
-    @Nonnull
-    Iterable<MachineImageFormat> listSupportedFormatsForBundling() throws CloudException, InternalException {
-        return getCapabilities().listSupportedFormatsForBundling();
+        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
     }
 
     @Override
@@ -648,27 +421,27 @@ public class DOImage extends AbstractImageSupport {
     public
     @Nonnull
     MachineImage registerImageBundle(@Nonnull ImageCreateOptions options) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
+        throw new OperationNotSupportedException("Image bundling not supported by " + getProvider().getCloudName());
     }
 
     @Override
     public void remove(@Nonnull String providerImageId, boolean checkState) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
+        throw new OperationNotSupportedException("Image removal not supported by " + getProvider().getCloudName());
     }
 
     @Override
     public void removeAllImageShares(@Nonnull String providerImageId) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
+        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
     }
 
     @Override
     public void removeImageShare(@Nonnull String providerImageId, @Nonnull String accountNumber) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
+        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
     }
 
     @Override
     public void removePublicShare(@Nonnull String providerImageId) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
+        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
     }
 
     @Override
@@ -743,46 +516,6 @@ public class DOImage extends AbstractImageSupport {
         return populator.getResult();
     }
 
-    private void setPrivateShare(@Nonnull String imageId, boolean allowed, @Nonnull String... accountIds) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
-    }
-
-    private void setPublicShare(@Nonnull String imageId, boolean allowed) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
-    }
-
-    private
-    @Nonnull
-    List<String> sharesAsList(@Nonnull String forMachineImageId) throws CloudException, InternalException {
-        throw new CloudException("Operation Not supported");
-    }
-
-    @Override
-    public boolean supportsCustomImages() {
-        return true;
-    }
-
-    @Override
-    public boolean supportsImageCapture(@Nonnull MachineImageType type) throws CloudException, InternalException {
-        return getCapabilities().supportsImageCapture(type);
-    }
-
-    @Override
-    public boolean supportsImageSharing() throws CloudException, InternalException {
-        return getCapabilities().supportsImageSharing();
-    }
-
-    @Override
-    public boolean supportsImageSharingWithPublic() throws CloudException, InternalException {
-        return getCapabilities().supportsImageSharingWithPublic();
-    }
-
-    @Override
-    public boolean supportsPublicLibrary(@Nonnull ImageClass cls) throws CloudException, InternalException {
-        return getCapabilities().supportsPublicLibrary(cls);
-    }
-
-
     @Override
     public void updateTags(@Nonnull String imageId, @Nonnull Tag... tags) throws CloudException, InternalException {
         updateTags(new String[]{imageId}, tags);
@@ -790,7 +523,7 @@ public class DOImage extends AbstractImageSupport {
 
     @Override
     public void updateTags(@Nonnull String[] imageIds, @Nonnull Tag... tags) throws CloudException, InternalException {
-        throw new CloudException("Operation not supported");
+        throw new OperationNotSupportedException("Image tagging not supported by " + getProvider().getCloudName());
     }
 
     @Override
@@ -800,7 +533,7 @@ public class DOImage extends AbstractImageSupport {
 
     @Override
     public void removeTags(@Nonnull String[] imageIds, @Nonnull Tag... tags) throws CloudException, InternalException {
-        throw new CloudException("Operation not supported");
+        throw new OperationNotSupportedException("Image tagging not supported by " + getProvider().getCloudName());
     }
 
 }

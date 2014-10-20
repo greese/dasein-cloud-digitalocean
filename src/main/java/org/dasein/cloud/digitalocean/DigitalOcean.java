@@ -52,16 +52,6 @@ public class DigitalOcean extends AbstractCloud {
     
     private transient volatile DOProvider provider;
 
-    public
-    @Nonnull
-    DOProvider getEC2Provider() {
-        if (provider == null) {
-            provider = DOProvider.valueOf(getProviderName());
-        }
-        return provider;
-    }
-    
-
     public @Nullable String getUrl() throws InternalException, CloudException {
         ProviderContext ctx = getContext();
         String url;
@@ -155,9 +145,6 @@ public class DigitalOcean extends AbstractCloud {
     public @Nonnull IdentityServices getIdentityServices() {
         return new IdentityServices(this);
     }
-    
-    
-    
 
     @Override
     public @Nonnull String getProviderName() {
@@ -167,7 +154,6 @@ public class DigitalOcean extends AbstractCloud {
         return (name == null ? "DigitalOcean" : name);
     }
 
-   
     @Override
     public @Nullable String testContext() {
         if( logger.isTraceEnabled() ) {
@@ -192,7 +178,7 @@ public class DigitalOcean extends AbstractCloud {
             		return null;
             	}
             	
-        		Regions r = (Regions)DigitalOceanModelFactory.getModel(this, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
+        		Regions r = (Regions) DigitalOceanModelFactory.getModel(this, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
         		if (r.getRegions().size() > 0) {
         			return ctx.getAccountNumber();
         		}
@@ -200,8 +186,7 @@ public class DigitalOcean extends AbstractCloud {
             	            	
             }
             catch( Throwable t ) {
-                logger.error("Error querying API key: " + t.getMessage());
-                t.printStackTrace();
+                logger.error("Error querying API key: " + t.getMessage(), t);
                 return null;
             }
         }

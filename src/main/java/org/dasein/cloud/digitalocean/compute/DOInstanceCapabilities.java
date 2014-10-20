@@ -17,7 +17,7 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.compute;
 
 import org.dasein.cloud.*;
 
@@ -27,6 +27,7 @@ import org.dasein.cloud.compute.Platform;
 import org.dasein.cloud.compute.VMScalingCapabilities;
 import org.dasein.cloud.compute.VirtualMachineCapabilities;
 import org.dasein.cloud.compute.VmState;
+import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.util.NamingConstraints;
 
 import javax.annotation.Nonnull;
@@ -111,7 +112,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public @Nonnull NamingConstraints getVirtualMachineNamingConstraints() {
-        return NamingConstraints.getAlphaNumeric(1, 100);
+        return NamingConstraints.getAlphaNumeric(1, 100).withNoSpaces().constrainedBy('.', '-');
     }
 
     @Override
