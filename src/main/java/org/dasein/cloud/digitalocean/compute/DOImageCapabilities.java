@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 ACenterA, Inc. 
+ * Copyright (C) 2009-2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -30,12 +30,12 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Describes the capabilities of AWS with respect to Dasein image operations.
- * <p>Created by Francis Lavalliere: 10/05/2014 14:40</p>
+ * Describes the capabilities of DigitalOcean with respect to Dasein image operations.
  *
+ * @author Maria Pavlova
  * @author Francis Lavalliere
- * @version 2014.08 initial version
- * @since 2014.08
+ * @version 2015.01 initial version
+ * @since 2015.01
  */
 public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> implements ImageCapabilities {
 
@@ -45,12 +45,12 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
 
     @Override
     public boolean canBundle(@Nonnull VmState vmState) throws CloudException, InternalException {
-        return false;//VmState.RUNNING.equals(vmState);
+        return false;
     }
 
     @Override
     public boolean canImage(@Nonnull VmState vmState) throws CloudException, InternalException {
-        return false;//
+        return false;
     }
 
     @Nonnull
@@ -80,25 +80,25 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     @Nonnull
     @Override
     public Iterable<MachineImageFormat> listSupportedFormats() throws CloudException, InternalException {
-        return null;
+        return Arrays.asList(MachineImageFormat.RAW);
     }
 
     @Nonnull
     @Override
     public Iterable<MachineImageFormat> listSupportedFormatsForBundling() throws CloudException, InternalException {
-        return null;
+        return Collections.emptyList();
     }
 
     @Nonnull
     @Override
     public Iterable<ImageClass> listSupportedImageClasses() throws CloudException, InternalException {
-    	return null;
+    	return Arrays.asList(ImageClass.MACHINE);
     }
 
     @Nonnull
     @Override
     public Iterable<MachineImageType> listSupportedImageTypes() throws CloudException, InternalException {
-    	return null;
+    	return Arrays.asList(MachineImageType.VOLUME);
     }
 
     @Override
@@ -123,6 +123,6 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
 
     @Override
     public boolean supportsPublicLibrary(@Nonnull ImageClass imageClass) {
-        return false;
+        return true;
     }
 }

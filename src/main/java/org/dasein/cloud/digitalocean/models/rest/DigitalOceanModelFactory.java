@@ -19,40 +19,44 @@
 package org.dasein.cloud.digitalocean.models.rest;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.*;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.CloudProvider;
+import org.dasein.cloud.InternalException;
 import org.dasein.cloud.digitalocean.CloudProviderException;
+import org.dasein.cloud.digitalocean.compute.DigitalOceanException;
 import org.dasein.cloud.digitalocean.models.Action;
 import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.IDigitalOcean;
 import org.dasein.cloud.digitalocean.models.actions.droplet.Create;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Document;
+import org.dasein.cloud.util.XMLParser;
 
 
 public class DigitalOceanModelFactory {
-	
-	static private final Logger logger = org.dasein.cloud.digitalocean.DigitalOcean.getLogger(DigitalOceanModelFactory.class);
 
+    static private final Logger wire = org.dasein.cloud.digitalocean.DigitalOcean.getWireLogger(DigitalOceanModelFactory.class);
+	static private final Logger logger = org.dasein.cloud.digitalocean.DigitalOcean.getLogger(DigitalOceanModelFactory.class);
+    static private final String url = null;
     //for get method
     private static String performHttpRequest(RESTMethod method, String token, String endpoint, int timeout) {
     	return performHttpRequest( method, token, endpoint, timeout, null);
@@ -63,111 +67,161 @@ public class DigitalOceanModelFactory {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout+ ")");
         }
 
-			//Ignore pagination use of per_page=-1 for all requests
-			String strUrl = endpoint + "?per_page=-1";						
-				
-			if( logger.isTraceEnabled() ) {
-				logger.trace("CALLING - " + method + " "  + endpoint);
-			}
-			HttpRequestBase req = null;
-			if (method == RESTMethod.GET) {
-				req = new HttpGet(strUrl);
-			} else if (method == RESTMethod.POST) {
-				req = new HttpPost(strUrl);
-			} else if (method == RESTMethod.PUT) {
-				req = new HttpPut(strUrl);
-			} else if (method == RESTMethod.DELETE) {
-				req = new HttpDelete(strUrl);
-			}
-			try {
-				HttpParams my_httpParams = new BasicHttpParams();
-				req.setHeader("Authorization", "Bearer "  + token);
-                req.setHeader("Accept", "application/json");
-                req.setHeader("Content-Type","application/json;charset=UTF-8");
+        //Ignore pagination use of per_page=-1 for all requests
+        String strUrl = endpoint + "?per_page=-1";
 
-				HttpConnectionParams.setConnectionTimeout(my_httpParams, timeout);
-				HttpConnectionParams.setSoTimeout(my_httpParams, timeout);				
-				if ((method == RESTMethod.POST) || (method == RESTMethod.PUT)) {
-					
-					JSONObject jsonToPost = action.getParameters();
-					if (jsonToPost != null) {	
-						StringEntity requestEntity = new StringEntity(					
-								jsonToPost.toString(),
-						    ContentType.APPLICATION_JSON);
-					
-						if (method == RESTMethod.POST) ((HttpPost)req).setEntity(requestEntity);
-						if (method == RESTMethod.PUT) ((HttpPut)req).setEntity(requestEntity);
-					}
-					
-					/*List<NameValuePair> params = new ArrayList<NameValuePair>();
-					JSONObject j = action.getParameters();
-					Iterator<String> i = j.keys();
-					while(i.hasNext()) {
-						String key = i.next();
-						NameValuePair nvp = new NameValuePair(key, (String) j.get(key));
-						params.add(nvp);	
-					}*/
-				}
-				
-			    HttpClient httpclient = new DefaultHttpClient(my_httpParams);	
-			    HttpResponse response = httpclient.execute(req);
-			    
-			    if (method == RESTMethod.DELETE) {
-		    		if ((response.getStatusLine().getStatusCode() == 204) ) {
-					   	
-				    	response = null;
-						httpclient = null;
-						 				
-				    	return null;
-				    } else {
-				        //Error occured
-				    	response = null;
-						httpclient = null;
-						  						
-													
-						throw new CloudException("Delete method returned un expected coded instead of 204");						
-						
-				    }
-			    } else {
-				     //TODO: Handle errors??
-				    BufferedReader br1=new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-				    			    
-				    String s1 = br1.readLine();
-				    String resp = "";
-					while (s1 != null) {		
-							resp += s1;
-							s1=br1.readLine();						
-					}		    
-					br1.close();
-					if( logger.isTraceEnabled() ) {
-						logger.trace("RECEIVED - " + "[" + response.getStatusLine().getStatusCode() + "] " + resp);
-					}	
-					
-					if ((response.getStatusLine().getStatusCode() == 200) || (response.getStatusLine().getStatusCode() == 201) ) {
-					   	
-				    	response = null;
-						httpclient = null;
-						 				
-				    	return resp;
-				    } else {
-				    	 //Add Error
-				    	 logger.error("Status:" + response.getStatusLine().getStatusCode() + " - " + resp);
-				    	 return resp;
-				    	 //throw new CloudException("Status:" + response.getStatusLine().getStatusCode() + " - " + resp);				    	 
-				    }
-			    }
-			} catch (Exception e1) {
-				e1.printStackTrace();
-			} finally {
-				try {req.releaseConnection();}catch (Exception e) {}
-				if( logger.isTraceEnabled() ) {
-		            logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout + ")");
-		        }
-			} 
-			
-			
-			return null;
-		} 
+        if( logger.isTraceEnabled() ) {
+            logger.trace("CALLING - " + method + " "  + endpoint);
+        }
+
+        HttpRequestBase req = null;
+        if (method == RESTMethod.GET) {
+            req = new HttpGet(strUrl);
+        }
+        else if (method == RESTMethod.POST) {
+            req = new HttpPost(strUrl);
+        }
+        else if (method == RESTMethod.PUT) {
+            req = new HttpPut(strUrl);
+        }
+        else if (method == RESTMethod.DELETE) {
+            req = new HttpDelete(strUrl);
+        }
+
+        try {
+            HttpParams httpParams = new BasicHttpParams();
+            req.setHeader("Authorization", "Bearer " + token);
+            req.setHeader("Accept", "application/json");
+            req.setHeader("Content-Type", "application/json;charset=UTF-8");
+
+            HttpConnectionParams.setConnectionTimeout(httpParams, timeout);
+            HttpConnectionParams.setSoTimeout(httpParams, timeout);
+
+            StringEntity requestEntity = null;
+            if( req instanceof HttpEntityEnclosingRequestBase ) {
+                JSONObject jsonToPost = action.getParameters();
+                if (jsonToPost != null) {
+                    requestEntity = new StringEntity(
+                            jsonToPost.toString(),
+                            ContentType.APPLICATION_JSON);
+                    ((HttpEntityEnclosingRequestBase) req).setEntity(requestEntity);
+                }
+
+                /*List<NameValuePair> params = new ArrayList<NameValuePair>();
+                JSONObject j = action.getParameters();
+                Iterator<String> i = j.keys();
+                while(i.hasNext()) {
+                    String key = i.next();
+                    NameValuePair nvp = new NameValuePair(key, (String) j.get(key));
+                    params.add(nvp);
+                }*/
+            }
+
+            HttpClient httpClient = new DefaultHttpClient(httpParams);
+
+            if (wire.isDebugEnabled()) {
+                wire.debug("");
+                wire.debug("--------------------------------------------------------------------------------------");
+            }
+
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Talking to server at " + url);
+            }
+            if( wire.isDebugEnabled() ) {
+                wire.debug(req.getRequestLine().toString());
+                for( Header header : req.getAllHeaders() ) {
+                    wire.debug(header.getName() + ": " + header.getValue());
+                }
+                wire.debug("");
+
+                if( requestEntity != null ) {
+                    try {
+                        wire.debug(EntityUtils.toString(requestEntity));
+                        wire.debug("");
+                    } catch (IOException ignore) {
+                    }
+                }
+            }
+
+            HttpResponse response = null;
+            int retryCount = 0;
+
+            while( retryCount < 6 ) {
+                response = httpClient.execute(req);
+
+                if (wire.isDebugEnabled()) {
+                    wire.debug(response.getStatusLine().toString());
+                }
+
+                if (method == RESTMethod.DELETE) {
+                    if ((response.getStatusLine().getStatusCode() == 204)) {
+                        return null;
+                    } else {
+                        retryCount++;
+                        Thread.sleep(5000);
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+            if (method == RESTMethod.DELETE && (response.getStatusLine().getStatusCode() != 204)) {
+                //Error occured
+                throw new CloudException("Delete method returned unexpected code, despite retrying.");
+            }
+
+            //TODO: Handle errors??
+            BufferedReader br1 = null;
+            StringBuilder sb = new StringBuilder();
+
+            try {
+                br1 = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+
+                String line;
+                while ((line = br1.readLine()) != null) {
+                    if (wire.isDebugEnabled()) {
+                        wire.debug(line);
+                    }
+                    sb.append(line).append("\n");
+                }
+            }
+            finally {
+                if( br1 != null ) {
+                    br1.close();
+                }
+            }
+
+            if (logger.isTraceEnabled()) {
+                logger.trace("RECEIVED - " + "[" + response.getStatusLine().getStatusCode() + "] " + sb.toString());
+            }
+
+            if ((response.getStatusLine().getStatusCode() == 200) || (response.getStatusLine().getStatusCode() == 201)) {
+                return sb.toString();
+            } else {
+                //Add Error
+                logger.error("Status:" + response.getStatusLine().getStatusCode() + " - " + sb.toString());
+                return sb.toString();
+                //throw new CloudException("Status:" + response.getStatusLine().getStatusCode() + " - " + resp);
+            }
+        } catch (Exception e1) {
+            logger.error(e1);
+        } finally {
+            try {
+                req.releaseConnection();
+            } catch (Exception e) {
+            }
+            if (logger.isTraceEnabled()) {
+                logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout + ")");
+            }
+            if (wire.isDebugEnabled()) {
+                wire.debug("--------------------------------------------------------------------------------------");
+                wire.debug("");
+            }
+        }
+
+        return null;
+    }
 	
 
 //	final static Gson gson = new Gson();
@@ -298,8 +352,7 @@ public class DigitalOceanModelFactory {
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + ", " + returnObject + ")");
 		}
-	
-		
+
 		String token = (String)provider.getContext().getConfigurationValue("token");
         
 		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa), 15000, doa);
@@ -322,7 +375,6 @@ public class DigitalOceanModelFactory {
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
 		}
-
 
 		try {
 			Create action = new Create(dropletName, sizeId, theImageId, regionId);
@@ -375,7 +427,6 @@ public class DigitalOceanModelFactory {
 		}
 	}
 
-
 	public static Droplet getDropletByInstance(CloudProvider provider, String dropletInstanceId) throws UnsupportedEncodingException, CloudException {
 		// TODO Auto-generated method stub
 		return (Droplet)getModelById(provider, DigitalOcean.DROPLET, dropletInstanceId);		
@@ -384,4 +435,6 @@ public class DigitalOceanModelFactory {
 	public static Action getEventById(CloudProvider provider, String id) throws UnsupportedEncodingException, CloudException {		 
 		return (Action)getModelById(provider, DigitalOcean.ACTION, id);				
 	}
+
+
 }

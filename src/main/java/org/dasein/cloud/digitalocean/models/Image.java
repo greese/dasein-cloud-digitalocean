@@ -18,6 +18,7 @@
  */
 package org.dasein.cloud.digitalocean.models;
 
+import com.google.gson.annotations.SerializedName;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 	
 public class Image implements DigitalOceanRestModel {
@@ -25,7 +26,8 @@ public class Image implements DigitalOceanRestModel {
 	String slug;
 	String name;
 	String distribution;
-	Boolean isPublic;	
+    @SerializedName("public")
+	Boolean isPublic;
 	String[] regions;
 	
 	public String getId() {
