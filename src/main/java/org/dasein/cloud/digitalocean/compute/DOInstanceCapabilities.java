@@ -47,7 +47,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canAlter(@Nonnull VmState fromState) throws CloudException, InternalException {
-    	 return fromState.equals(VmState.STOPPED);
+    	 return false;  //fromState.equals(VmState.STOPPED); - temporarily unavailable
     }
 
     @Override
@@ -87,7 +87,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canTerminate(@Nonnull VmState fromState) throws CloudException, InternalException {
-        return !VmState.TERMINATED.equals(fromState);
+        return !VmState.PENDING.equals(fromState) && !VmState.TERMINATED.equals(fromState);
     }
 
     @Override
@@ -148,6 +148,11 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean isUserDataSupported() throws CloudException, InternalException {
+        return false;
+    }
+
+    @Override
+    public boolean isUserDefinedPrivateIPSupported() throws CloudException, InternalException {
         return false;
     }
 

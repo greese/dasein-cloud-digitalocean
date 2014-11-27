@@ -112,12 +112,22 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     }
 
     @Override
+    public boolean supportsImageCopy() throws CloudException, InternalException {
+        return false;
+    }
+
+    @Override
     public boolean supportsImageSharing() {
         return false;
     }
 
     @Override
     public boolean supportsImageSharingWithPublic() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsListingAllRegions() throws CloudException, InternalException {
         return false;
     }
 
