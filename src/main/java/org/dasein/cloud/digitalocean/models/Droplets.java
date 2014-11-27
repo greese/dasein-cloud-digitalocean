@@ -18,22 +18,21 @@
  */
 package org.dasein.cloud.digitalocean.models;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Droplets implements DigitalOceanRestModel {
 
-	Set<Droplet> sDroplet = new HashSet<Droplet>();
+	List<Droplet> droplets = new ArrayList<Droplet>();
 	
 	public void addDroplet(Droplet d) {
-		sDroplet.add(d);		
+		droplets.add(d);
 	}
 	
-	public Set<Droplet> getDroplet() {
-		return sDroplet;
+	public List<Droplet> getDroplets() {
+		return droplets;
 	}
 }

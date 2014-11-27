@@ -46,6 +46,7 @@ import org.dasein.cloud.digitalocean.models.actions.sshkey.Destroy;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.SSHKeypair;
 import org.dasein.cloud.identity.ServiceAction;
+import org.dasein.cloud.identity.ShellKeyCapabilities;
 import org.dasein.cloud.identity.ShellKeySupport;
 import org.dasein.cloud.util.APITrace;
 import org.w3c.dom.Document;
@@ -58,7 +59,9 @@ import javax.annotation.Nullable;
 
 public class Keypairs implements ShellKeySupport {
 	static private final Logger logger = DigitalOcean.getLogger(Keypairs.class);
-	
+
+    private volatile transient KeyPairCapabilities capabilities;
+
 	private DigitalOcean provider = null;
 	
 	public Keypairs(@Nonnull DigitalOcean provider) {
@@ -143,8 +146,9 @@ public class Keypairs implements ShellKeySupport {
 	}
 
     @Override
+    @Deprecated
     public Requirement getKeyImportSupport() throws CloudException, InternalException {
-        return Requirement.OPTIONAL;
+        return Requirement.REQUIRED;
     }
 
     @Override
@@ -199,9 +203,19 @@ public class Keypairs implements ShellKeySupport {
     }
 
 	@Override
+    @Deprecated
 	public @Nonnull String getProviderTermForKeypair(@Nonnull Locale locale) {
 		return "keypair";
 	}
+
+    @Nonnull
+    @Override
+    public ShellKeyCapabilities getCapabilities() throws CloudException, InternalException {
+        if( capabilities == null ) {
+            capabilities = new KeyPairCapabilities(provider);
+        }
+        return capabilities;
+    }
 
     @Override
     public @Nonnull SSHKeypair importKeypair(@Nonnull String name, @Nonnull String publicKey) throws InternalException, CloudException {

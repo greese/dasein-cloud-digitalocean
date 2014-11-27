@@ -21,6 +21,7 @@ package org.dasein.cloud.digitalocean.models.actions.droplet;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanPostAction;
@@ -57,7 +58,7 @@ public class Create extends DigitalOceanPostAction {
 		this.region = String.valueOf(regionId);
 	}
 
-	public void setSshKeyIds(ArrayList<Long> keyIds) {
+	public void setSshKeyIds(List<Long> keyIds) {
 		Iterator<Long> itr = keyIds.iterator();
 		ssh_key_ids.clear();
 		ssh_key_ids.addAll(keyIds);

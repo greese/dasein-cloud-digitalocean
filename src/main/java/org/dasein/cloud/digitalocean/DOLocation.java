@@ -44,14 +44,11 @@ public class DOLocation implements DataCenterServices {
 
     @Override
     public @Nullable DataCenter getDataCenter(@Nonnull String dataCenterId) throws InternalException, CloudException {
-        for( Region region : listRegions() ) {
-            for( DataCenter dc : listDataCenters(region.getProviderRegionId()) ) {
-                if( dataCenterId.equals(dc.getProviderDataCenterId()) ) {
-                    return dc;
-                }
-            }
+        Region region = getRegion(dataCenterId);
+        if( region == null ) {
+            return null;
         }
-        return null;
+        return new DataCenter(dataCenterId, region.getName(), dataCenterId, region.isActive(), region.isAvailable());
     }
 
     @Override
@@ -76,46 +73,7 @@ public class DOLocation implements DataCenterServices {
 
     @Override
     public @Nonnull Collection<DataCenter> listDataCenters(@Nonnull String providerRegionId) throws InternalException, CloudException {
-        APITrace.begin(provider, "listDataCenters");
-        try {
-            Region region = getRegion(providerRegionId);
-
-            if( region == null ) {
-                throw new CloudException("No such region: " + providerRegionId);
-            }
-            ProviderContext ctx = provider.getContext();
-
-            if( ctx == null ) {
-                throw new NoContextException();
-            }
-            Cache<DataCenter> cache = Cache.getInstance(provider, "dataCenters", DataCenter.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
-            Collection<DataCenter> dcList = (Collection<DataCenter>)cache.get(ctx);
-
-            if( dcList != null ) {
-                return dcList;
-            }
-            ArrayList<DataCenter> dataCenters = new ArrayList<DataCenter>();
-            
-            Regions availableregions;
-			try {
-				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
-				
-	            Set<org.dasein.cloud.digitalocean.models.Region> regions = availableregions.getRegions();
-	            Iterator<org.dasein.cloud.digitalocean.models.Region> itr = regions.iterator();
-	            while(itr.hasNext()) {
-	            	org.dasein.cloud.digitalocean.models.Region s = itr.next();
-	            	DataCenter vmp = toDatacenter(s);
-	            	dataCenters.add(vmp);
-	            }
-	            cache.put(ctx, dataCenters);
-	            return dataCenters;
-			} catch (Exception e) {
-				throw new CloudException(e);				
-			}
-        }
-        finally {
-            APITrace.end();
-        }
+        return Arrays.asList(getDataCenter(providerRegionId));
     }
 
     @Override
@@ -134,12 +92,12 @@ public class DOLocation implements DataCenterServices {
                 return regions;
             }
             regions = new ArrayList<Region>();
-           
-            
+
+
             Regions availableregions;
 			try {
 				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
-				
+
 	            Set<org.dasein.cloud.digitalocean.models.Region> regionsQuery = availableregions.getRegions();
 	            Iterator<org.dasein.cloud.digitalocean.models.Region> itr = regionsQuery.iterator();
 	            while(itr.hasNext()) {
@@ -151,7 +109,7 @@ public class DOLocation implements DataCenterServices {
 	            return regions;
 			} catch (Exception e) {
 				e.printStackTrace();
-				throw new CloudException(e);				
+				throw new CloudException(e);
 			}
         }
         finally {
@@ -196,7 +154,7 @@ public class DOLocation implements DataCenterServices {
     }
 
     public DataCenter toDatacenter(org.dasein.cloud.digitalocean.models.Region r) {
-    	
+
     	DataCenter dc = new DataCenter();
     	dc.setRegionId(r.getSlug());
     	dc.setProviderDataCenterId(r.getSlug());
@@ -205,9 +163,9 @@ public class DOLocation implements DataCenterServices {
     	dc.setAvailable(r.getActive());
     	return dc;
     }
-    
+
     public Region toRegion(org.dasein.cloud.digitalocean.models.Region region) {
-    	
+
     	Region r = new Region();
     	r.setProviderRegionId(region.getSlug());
     	r.setName(region.getName());
