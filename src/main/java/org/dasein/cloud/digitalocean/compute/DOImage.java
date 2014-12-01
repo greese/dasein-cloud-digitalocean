@@ -41,7 +41,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class DOImage extends AbstractImageSupport {
+public class DOImage extends AbstractImageSupport<DigitalOcean> {
     static private final Logger logger = Logger.getLogger(DOImage.class);
 
     private DigitalOcean provider = null;

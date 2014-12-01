@@ -22,5 +22,5 @@ public enum RESTMethod {
 	GET,
 	PUT,
 	DELETE,
-	POST
+    HEAD, POST
 }
