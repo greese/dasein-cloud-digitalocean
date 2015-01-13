@@ -26,19 +26,17 @@ import org.dasein.cloud.digitalocean.compute.DOImage;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class DOComputeServices extends AbstractComputeServices {
-    private DigitalOcean cloud;
-    
-    public DOComputeServices(@Nonnull DigitalOcean cloud) { this.cloud = cloud; }
+public class DOComputeServices extends AbstractComputeServices<DigitalOcean> {
+    public DOComputeServices(@Nonnull DigitalOcean cloud) { super(cloud); }
     
     @Override
     public @Nonnull DOInstance getVirtualMachineSupport() {
-        return new DOInstance(cloud);
+        return new DOInstance(getProvider());
     }
     
     @Override
     public @Nonnull DOImage getImageSupport() {
-        return new DOImage(cloud);
+        return new DOImage(getProvider());
     }
     
 }
