@@ -56,17 +56,6 @@
             <optional>false</optional>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>1.3.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.2.4</version>
-        </dependency>
-        <dependency>
             <groupId>org.dasein</groupId>
             <artifactId>dasein-util</artifactId>
             <version>2013.02</version>
@@ -99,6 +88,11 @@
             <artifactId>junit</artifactId>
             <version>4.9</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.3</version>
         </dependency>
     </dependencies>
 
@@ -199,6 +193,18 @@
                             <value>${apiSharedKey}</value>
                         </property>
                         <property>
+                            <name>apiSecretKey</name>
+                            <value>${apiSecretKey}</value>
+                        </property>
+                        <property>
+                            <name>x509Cert</name>
+                            <value>${x509Cert}</value>
+                        </property>
+                        <property>
+                            <name>x509Key</name>
+                            <value>${x509Key}</value>
+                        </property>
+                        <property>
                             <name>cloudName</name>
                             <value>${cloudName}</value>
                         </property>
@@ -207,16 +213,8 @@
                             <value>${providerName}</value>
                         </property>
                         <property>
-                            <name>providerClass</name>
-                            <value>${providerClass}</value>
-                        </property>
-                        <property>
                             <name>regionId</name>
                             <value>${regionId}</value>
-                        </property>
-                        <property>
-                            <name>token</name>
-                            <value>${apiSharedKey}</value>
                         </property>
                     </systemProperties>
                     <excludes>
