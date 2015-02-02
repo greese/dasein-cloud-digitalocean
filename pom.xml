@@ -193,18 +193,6 @@
                             <value>${apiSharedKey}</value>
                         </property>
                         <property>
-                            <name>apiSecretKey</name>
-                            <value>${apiSecretKey}</value>
-                        </property>
-                        <property>
-                            <name>x509Cert</name>
-                            <value>${x509Cert}</value>
-                        </property>
-                        <property>
-                            <name>x509Key</name>
-                            <value>${x509Key}</value>
-                        </property>
-                        <property>
                             <name>cloudName</name>
                             <value>${cloudName}</value>
                         </property>
@@ -213,8 +201,16 @@
                             <value>${providerName}</value>
                         </property>
                         <property>
+                            <name>providerClass</name>
+                            <value>${providerClass}</value>
+                        </property>
+                        <property>
                             <name>regionId</name>
                             <value>${regionId}</value>
+                        </property>
+                        <property>
+                            <name>token</name>
+                            <value>${apiSharedKey}</value>
                         </property>
                     </systemProperties>
                     <excludes>
@@ -237,38 +233,6 @@
                 </executions>
             </plugin>
         </plugins>
-        <!--
-           Above maven-dependepcy-plugin gives a validation error in m2e.
-           To fix that, add the plugin management step below. Per: http://stackoverflow.com/a/12109018
-           -->
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.eclipse.m2e</groupId>
-                    <artifactId>lifecycle-mapping</artifactId>
-                    <version>1.0.0</version>
-                    <configuration>
-                        <lifecycleMappingMetadata>
-                            <pluginExecutions>
-                                <pluginExecution>
-                                    <pluginExecutionFilter>
-                                        <groupId>org.apache.maven.plugins</groupId>
-                                        <artifactId>maven-dependency-plugin</artifactId>
-                                        <versionRange>[2.0,)</versionRange>
-                                        <goals>
-                                            <goal>copy-dependencies</goal>
-                                        </goals>
-                                    </pluginExecutionFilter>
-                                    <action>
-                                        <execute/>
-                                    </action>
-                                </pluginExecution>
-                            </pluginExecutions>
-                        </lifecycleMappingMetadata>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <distributionManagement>
