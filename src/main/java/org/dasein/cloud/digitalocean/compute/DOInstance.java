@@ -122,17 +122,28 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             }
                         
             Start action = new Start();            
-            
-            
-            try {
-            	Action evt = DigitalOceanModelFactory.performAction(getProvider(), action, instanceId);
-            } catch( CloudException e ) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage());
-                throw new CloudException(e);
-			}
+            long timeout = System.currentTimeMillis() + 3 * 60 * 1000; // 3 minutes from now
+            int retry = 1;
+            while( System.currentTimeMillis() < timeout ) {
+                try {
+                    DigitalOceanModelFactory.performAction(getProvider(), action, instanceId);
+                    break;
+                } catch (CloudException e) {
+                    if( e.getHttpCode() == 422 && e.getMessage().contains("pending event") ) {
+                        try {
+                            Thread.sleep((long) Math.pow(2, retry) * 100L); // exponential retry
+                        } catch (InterruptedException ignore) {
+                        }
+                        retry++;
+                        continue;
+                    }
+                    logger.error(e.getMessage());
+                    throw new CloudException(e);
+                } catch (UnsupportedEncodingException e) {
+                    logger.error(e.getMessage());
+                    throw new CloudException(e);
+                }
+            }
         } finally {
             APITrace.end();
         }

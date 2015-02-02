@@ -141,6 +141,12 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     @Nonnull
     Iterable<MachineImage> executeImageSearch(int pass, boolean forPublic, @Nonnull ImageFilterOptions options) throws CloudException, InternalException {
         APITrace.begin(provider, "Image.executeImageSearch");
+
+        // this method only works for machine images in DO
+        if( options != null && options.getImageClass() != null && !options.getImageClass().equals(ImageClass.MACHINE)) {
+            return Collections.emptyList();
+        }
+
         try {
             final ProviderContext ctx = provider.getContext();
 
@@ -229,13 +235,9 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
             arch = Architecture.I32;
         }
 
-        Platform platform = Platform.UNKNOWN;
-        if (instance.getDistribution().compareToIgnoreCase("Ubuntu") == 0) {
-            platform = Platform.UBUNTU;
-        } else if (instance.getDistribution().compareToIgnoreCase("CentOS") == 0) {
-            platform = Platform.CENT_OS;
-        } else if (instance.getDistribution().compareToIgnoreCase("Fedora") == 0) {
-            platform = Platform.FEDORA_CORE;
+        Platform platform = Platform.guess(instance.getDistribution());
+        if( platform == Platform.UNKNOWN ) {
+            platform = Platform.guess(instance.getName());
         }
 
         MachineImage image = MachineImage.getImageInstance(
@@ -326,6 +328,9 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
 
     @Override
     public @Nonnull Iterable<ResourceStatus> listImageStatus(final @Nonnull ImageClass cls) throws CloudException, InternalException {
+        if (!cls.equals(ImageClass.MACHINE)) {
+            return Collections.emptyList();
+        }
         provider.hold();
         PopulatorThread<ResourceStatus> populator = new PopulatorThread<ResourceStatus>(new JiteratorPopulator<ResourceStatus>() {
             @Override
@@ -455,6 +460,11 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         } else {
             opts = options;
         }
+        // this method only works for machine images in DO
+        if( opts.getImageClass() != null && !opts.getImageClass().equals(ImageClass.MACHINE)) {
+            return Collections.emptyList();
+        }
+
         provider.hold();
         PopulatorThread<MachineImage> populator = new PopulatorThread<MachineImage>(new JiteratorPopulator<MachineImage>() {
             @Override
@@ -490,30 +500,31 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     public
     @Nonnull
     Iterable<MachineImage> searchPublicImages(final @Nonnull ImageFilterOptions options) throws CloudException, InternalException {
-        provider.hold();
-        PopulatorThread<MachineImage> populator = new PopulatorThread<MachineImage>(new JiteratorPopulator<MachineImage>() {
-            @Override
-            public void populate(@Nonnull Jiterator<MachineImage> iterator) throws Exception {
-                APITrace.begin(getProvider(), "searchPublicImages");
-                try {
-                    try {
-                        for (MachineImage img : executeImageSearch(1, true, options)) {
-                            iterator.push(img);
-                        }
-                        for (MachineImage img : executeImageSearch(2, true, options)) {
-                            iterator.push(img);
-                        }
-                    } finally {
-                        provider.release();
-                    }
-                } finally {
-                    APITrace.end();
-                }
-            }
-        });
-
-        populator.populate();
-        return populator.getResult();
+        return Collections.emptyList();
+//        provider.hold();
+//        PopulatorThread<MachineImage> populator = new PopulatorThread<MachineImage>(new JiteratorPopulator<MachineImage>() {
+//            @Override
+//            public void populate(@Nonnull Jiterator<MachineImage> iterator) throws Exception {
+//                APITrace.begin(getProvider(), "searchPublicImages");
+//                try {
+//                    try {
+//                        for (MachineImage img : executeImageSearch(1, true, options)) {
+//                            iterator.push(img);
+//                        }
+//                        for (MachineImage img : executeImageSearch(2, true, options)) {
+//                            iterator.push(img);
+//                        }
+//                    } finally {
+//                        provider.release();
+//                    }
+//                } finally {
+//                    APITrace.end();
+//                }
+//            }
+//        });
+//
+//        populator.populate();
+//        return populator.getResult();
     }
 
     @Override

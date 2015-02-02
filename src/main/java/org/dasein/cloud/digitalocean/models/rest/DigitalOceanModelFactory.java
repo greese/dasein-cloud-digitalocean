@@ -70,10 +70,12 @@ public class DigitalOceanModelFactory {
             logger.trace("CALLING - " + method + " "  + endpoint);
         }
         HttpResponse response;
-        String responseBody;
+        String responseBody = null;
         try {
             response = sendRequest(method, token, endpoint, timeout, action);
-            responseBody = IOUtils.toString(response.getEntity().getContent());
+            if( method != RESTMethod.DELETE ) {
+                responseBody = IOUtils.toString(response.getEntity().getContent());
+            }
             if( wire.isDebugEnabled() ) {
                 wire.debug(responseBody);
             }
@@ -286,7 +288,7 @@ public class DigitalOceanModelFactory {
 	public static Action performAction(CloudProvider provider, DigitalOceanAction doa, String id) throws UnsupportedEncodingException, CloudException {
 
 		if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".destroyDroplet(" + provider + "," + id + ")");
+            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + "," + doa + "," + id + ")");
 		}
 
 		String token = (String) provider.getContext().getConfigurationValue("token");
@@ -306,13 +308,13 @@ public class DigitalOceanModelFactory {
 				return (Action) DigitalOcean.ACTION.fromJson(jso);				
 			} else {
 				//Not sure why in API V2 they removed the message of errors... we are now left blind
-				throw new CloudException("An error occured while performing " + doa + " with parameters : " + doa.getParameters());
+				throw new CloudException("An error occurred while performing " + doa + " with parameters : " + doa.getParameters());
 			}
 		} catch (JSONException e) {			
 			throw new CloudException(e);
 		} finally {
 			if( logger.isTraceEnabled() ) {
-	            logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".destroyDroplet(" + provider + "," + id + ")");
+	            logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + "," + doa + "," + id + ")");
 	        }
 		}
 	}

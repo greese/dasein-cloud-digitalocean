@@ -22,6 +22,8 @@ import com.google.gson.annotations.SerializedName;
 import org.dasein.cloud.compute.VmState;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
+import javax.annotation.Nullable;
+
 
 public class Droplet implements DigitalOceanRestModel {
 	String id;
@@ -65,14 +67,17 @@ public class Droplet implements DigitalOceanRestModel {
 		return region;
 	}
 	
-	public VmState getStatus() {
-		if (this.status.compareTo("active") == 0) {
+	public @Nullable VmState getStatus() {
+		if( "active".equals(status) ) {
 			return VmState.RUNNING;
-		} else if (this.status.compareTo("new") == 0) {
+		}
+        else if( "new".equals(status) ) {
 			return VmState.PENDING;
-		} else if (this.status.compareTo("off") == 0) {
+		}
+        else if( "off".equals(status) ) {
 			return VmState.STOPPED;
-		} else if (this.status.compareTo("archive") == 0) {
+		}
+        else if( "archive".equals(status) ) {
 			return VmState.TERMINATED;
 		}
 		return null;
