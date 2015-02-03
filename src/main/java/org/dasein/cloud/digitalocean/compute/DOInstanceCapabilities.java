@@ -17,20 +17,17 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.compute;
 
-import org.dasein.cloud.AbstractCapabilities;
+import org.dasein.cloud.*;
 
-import org.dasein.cloud.Capabilities;
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.Requirement;
 import org.dasein.cloud.compute.Architecture;
 import org.dasein.cloud.compute.ImageClass;
 import org.dasein.cloud.compute.Platform;
 import org.dasein.cloud.compute.VMScalingCapabilities;
 import org.dasein.cloud.compute.VirtualMachineCapabilities;
 import org.dasein.cloud.compute.VmState;
+import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.util.NamingConstraints;
 
 import javax.annotation.Nonnull;
@@ -50,7 +47,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canAlter(@Nonnull VmState fromState) throws CloudException, InternalException {
-    	 return fromState.equals(VmState.STOPPED);
+    	 return false;  //fromState.equals(VmState.STOPPED); - temporarily unavailable
     }
 
     @Override
@@ -90,7 +87,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canTerminate(@Nonnull VmState fromState) throws CloudException, InternalException {
-        return !VmState.TERMINATED.equals(fromState);
+        return !VmState.PENDING.equals(fromState) && !VmState.TERMINATED.equals(fromState);
     }
 
     @Override
@@ -110,12 +107,22 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public @Nonnull String getProviderTermForVirtualMachine(@Nonnull Locale locale) throws CloudException, InternalException {
-        return "Droplet";
+        return "droplet";
     }
 
     @Override
     public @Nonnull NamingConstraints getVirtualMachineNamingConstraints() {
-        return NamingConstraints.getAlphaNumeric(1, 100);
+        return NamingConstraints.getAlphaNumeric(1, 100).withNoSpaces().constrainedBy('.', '-');
+    }
+
+    @Override
+    public @Nullable VisibleScope getVirtualMachineVisibleScope() {
+        return null;
+    }
+
+    @Override
+    public @Nullable VisibleScope getVirtualMachineProductVisibleScope() {
+        return null;
     }
 
     @Override
@@ -144,6 +151,11 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
         return false;
     }
 
+    @Override
+    public boolean isUserDefinedPrivateIPSupported() throws CloudException, InternalException {
+        return false;
+    }
+
     static private volatile Collection<Architecture> architectures;
 
     @Override
@@ -154,7 +166,62 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
         return architectures;
     }
 
-	@Override
+    @Override
+    public boolean supportsSpotVirtualMachines() throws InternalException, CloudException {
+        return false;
+    }
+
+    @Override
+    public boolean supportsAlterVM() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsClone() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsPause() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsReboot() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsResume() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsStart() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsStop() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsSuspend() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsTerminate() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsUnPause() {
+        return false;
+    }
+
+    @Override
 	@Nonnull
 	public Requirement identifyPasswordRequirement(Platform arg0)
 			throws CloudException, InternalException {

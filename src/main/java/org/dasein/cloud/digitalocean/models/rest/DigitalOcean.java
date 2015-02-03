@@ -19,19 +19,7 @@
 package org.dasein.cloud.digitalocean.models.rest;
 
 import org.dasein.cloud.CloudException;
-import org.dasein.cloud.digitalocean.models.Action;
-import org.dasein.cloud.digitalocean.models.Actions;
-import org.dasein.cloud.digitalocean.models.Droplet;
-import org.dasein.cloud.digitalocean.models.Droplets;
-import org.dasein.cloud.digitalocean.models.IDigitalOcean;
-import org.dasein.cloud.digitalocean.models.Image;
-import org.dasein.cloud.digitalocean.models.Images;
-import org.dasein.cloud.digitalocean.models.Key;
-import org.dasein.cloud.digitalocean.models.Keys;
-import org.dasein.cloud.digitalocean.models.Region;
-import org.dasein.cloud.digitalocean.models.Regions;
-import org.dasein.cloud.digitalocean.models.Size;
-import org.dasein.cloud.digitalocean.models.Sizes;
+import org.dasein.cloud.digitalocean.models.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,40 +34,32 @@ public enum DigitalOcean implements IDigitalOcean {
 	DROPLETS,
 	DROPLET,
 	SIZES,
-	SIZE,	
+	SIZE,
 	IMAGES,
 	IMAGE,	
-	//v1 only EVENTS,
-	//v1 only EVENT,
 	ACTIONS,
 	ACTION,
 	KEYS,
 	KEY;
-	
 
-	static Gson gson = new Gson();				
+
+    static Gson gson = new Gson();
 	@Override
 	public  String toString() {
 		switch(this) {
 		case REGIONS: return "v2/regions";
 		case REGION: return "v2/regions/%s";
 		case DROPLETS: return "v2/droplets";
-		case DROPLET: return "v2/droplets/%s";
+        case DROPLET: return "v2/droplets/%s";
 		case IMAGES: return "v2/images";
 		case IMAGE: return "v2/images/%s";
 		case SIZES: return "v2/sizes";
 		case SIZE: return "v2/size/%s";
 		case KEYS: return "v2/account/keys";
 		case KEY: return "v2/account/keys/%s";
-		//V2 EVENTS=ACTIONS
-		//v1 only case EVENTS: 
-		case ACTIONS:
-				return "v2/actions";
-		//V2 EVENT=ACTION
-		//v2 only case EVENT: 
-		case ACTION:
-				return "v2/actions/%s";
-		default: throw new IllegalArgumentException("DigialOcean endpoint not configured.");
+		case ACTIONS: return "v2/actions";
+		case ACTION: return "v2/actions/%s";
+		default: throw new IllegalArgumentException("DigitalOcean endpoint not configured.");
 		}		
 	}
 
@@ -91,9 +71,8 @@ public enum DigitalOcean implements IDigitalOcean {
 		
 		switch(this) {
 			case DROPLET: {
-				Object u = gson.fromJson(jso.getJSONObject("droplet").toString(), Droplet.class);
-				return (Droplet)u;
-			}			
+				return gson.fromJson(jso.getJSONObject("droplet").toString(), Droplet.class);
+			}
 			case DROPLETS: {
 				JSONArray jsArray = jso.getJSONArray("droplets");
 				Droplets droplets = new Droplets();
@@ -107,19 +86,18 @@ public enum DigitalOcean implements IDigitalOcean {
 				return droplets;
 			}
 			case SIZE: {
-				Object u = gson.fromJson(jso.getJSONObject("size").toString(), Droplet.class);
-				return (Droplet)u;
-			}			
+				return gson.fromJson(jso.getJSONObject("size").toString(), Size.class);
+			}
 			case SIZES: {
 				JSONArray jsArray = jso.getJSONArray("sizes");
-				Sizes SIZES = new Sizes();
+				Sizes sizes = new Sizes();
 						
 				for (int i = 0; i < jsArray.length(); i++) {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Size.class);
-					SIZES.addSize((Size)u);
+					sizes.addSize((Size)u);
 				}
 				
-				return SIZES;
+				return sizes;
 			}
 			
 			case REGIONS: {
@@ -128,18 +106,15 @@ public enum DigitalOcean implements IDigitalOcean {
 						
 				for (int i = 0; i < jsArray.length(); i++) {
 					try {
-						Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Region.class);
-						regions.addRegion((Region)u);
-					}catch (Exception ee) {
-						ee.printStackTrace();
+						regions.addRegion(gson.fromJson(jsArray.getJSONObject(i).toString(), Region.class));
+					} catch (Exception ignore) {
 					}
 				}
 				
 				return regions;
 			}
 			case REGION: {
-				Object u = gson.fromJson(jso.getJSONObject("region").toString(), Region.class);
-				return (Droplet)u;
+				return gson.fromJson(jso.getJSONObject("region").toString(), Region.class);
 			}
 			
 			//case EVENTS: throw new Depre
@@ -151,36 +126,29 @@ public enum DigitalOcean implements IDigitalOcean {
 				for (int i = 0; i < jsArray.length(); i++) {					
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Action.class);
 					actions.addAction((Action)u);
-					//lstRes.add((Region)u);
 				}
 				
 				return actions;
 			}
 			
-			//case EVENT:
 			case ACTION: {
-				Object u = gson.fromJson(jso.getJSONObject("action").toString(), Action.class);
-				return (Action)u;
+				return gson.fromJson(jso.getJSONObject("action").toString(), Action.class);
 			}
 			case KEY: {
-				Object u = gson.fromJson(jso.getJSONObject("ssh_key").toString(), Key.class);
-				return (Key)u;
-			}			
+				return gson.fromJson(jso.getJSONObject("ssh_key").toString(), Key.class);
+			}
 			case KEYS: {
 				JSONArray jsArray = jso.getJSONArray("ssh_keys");
-				Keys KEYS = new Keys();
-						
+				Keys keys = new Keys();
 				for (int i = 0; i < jsArray.length(); i++) {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Key.class);
-					KEYS.addKey((Key)u);
+					keys.addKey((Key)u);
 				}
-				
-				return KEYS;
+				return keys;
 			}
 			case IMAGE: {
-				Object u = gson.fromJson(jso.getJSONObject("image").toString(), Image.class);
-				return (Image)u;
-			}			
+				return gson.fromJson(jso.getJSONObject("image").toString(), Image.class);
+			}
 			case IMAGES: {
 				JSONArray jsArray = jso.getJSONArray("images");
 				Images images = new Images();

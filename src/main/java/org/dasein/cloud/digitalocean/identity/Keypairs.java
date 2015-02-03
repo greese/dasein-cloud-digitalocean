@@ -46,19 +46,18 @@ import org.dasein.cloud.digitalocean.models.actions.sshkey.Destroy;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.SSHKeypair;
 import org.dasein.cloud.identity.ServiceAction;
+import org.dasein.cloud.identity.ShellKeyCapabilities;
 import org.dasein.cloud.identity.ShellKeySupport;
 import org.dasein.cloud.util.APITrace;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class Keypairs implements ShellKeySupport {
 	static private final Logger logger = DigitalOcean.getLogger(Keypairs.class);
-	
+
+    private volatile transient KeyPairCapabilities capabilities;
+
 	private DigitalOcean provider = null;
 	
 	public Keypairs(@Nonnull DigitalOcean provider) {
@@ -66,44 +65,37 @@ public class Keypairs implements ShellKeySupport {
 	}
 	
 	@Override
-	public void deleteKeypair(@Nonnull String name) throws InternalException, CloudException {
+	public void deleteKeypair(@Nonnull String providerId) throws InternalException, CloudException {
         APITrace.begin(provider, "Keypair.deleteKeypair");
         try {
         	
-        	try {
-        		
-    			Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
-            	
-            	if (kSet == null) {
-            		throw new CloudException("Key item waas not found on " + provider.getCloudName());
-            	}
-            	
-            	Iterator<Key> itr = kSet.getKey().iterator();
-            	Key foundKey = null;
-            	while(itr.hasNext() && foundKey == null) {
-            		Key k = itr.next();            	
-	            	if( k != null && k.getName() != null & k.getName().equals(name) && k.getFingerprint() != null ) {
-	            		foundKey = k;                    	
-	                }
-            	}
-            	
-            	if (foundKey == null) {
-            		throw new CloudException("Key item waas not found on " + provider.getCloudName());
-            	}
-            	
-            	Destroy action = new Destroy();            
-            	
-            	Action evt = (Action)DigitalOceanModelFactory.performAction(provider, action, foundKey.getId());
-            	
-            	return;
-            } catch( CloudException e ) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage());
-                throw new CloudException(e);
-			}
-        	
+            Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
+
+            if (kSet == null) {
+                throw new CloudException("Key item was not found on " + provider.getCloudName());
+            }
+
+            Iterator<Key> itr = kSet.getKey().iterator();
+            Key foundKey = null;
+            while(itr.hasNext() && foundKey == null) {
+                Key k = itr.next();
+                if( k != null && k.getName() != null & k.getName().equals(providerId) && k.getFingerprint() != null ) {
+                    foundKey = k;
+                }
+            }
+
+            if (foundKey == null) {
+                throw new CloudException("Key item was not found on " + provider.getCloudName());
+            }
+
+            Destroy action = new Destroy();
+
+            Action evt = (Action)DigitalOceanModelFactory.performAction(provider, action, foundKey.getId());
+
+            return;
+        } catch (UnsupportedEncodingException e) {
+            logger.error(e.getMessage());
+            throw new CloudException(e);
         }
         finally {
             APITrace.end();
@@ -111,7 +103,7 @@ public class Keypairs implements ShellKeySupport {
 	}
 
 	@Override
-	public @Nullable String getFingerprint(@Nonnull String name) throws InternalException, CloudException {
+	public @Nullable String getFingerprint(@Nonnull String providerId) throws InternalException, CloudException {
         APITrace.begin(provider, "Keypair.getFingerprint");
         try {
             ProviderContext ctx = provider.getContext();
@@ -129,7 +121,7 @@ public class Keypairs implements ShellKeySupport {
             	Iterator<Key> itr = kSet.getKey().iterator();
             	while(itr.hasNext()) {
             		Key k = itr.next();            	
-	            	if( k != null && k.getName() != null & k.getName().equals(name) && k.getFingerprint() != null ) {
+	            	if( k != null && k.getName() != null & k.getName().equals(providerId) && k.getFingerprint() != null ) {
                     	return k.getFingerprint();
 	                }
             	}
@@ -150,12 +142,13 @@ public class Keypairs implements ShellKeySupport {
 	}
 
     @Override
+    @Deprecated
     public Requirement getKeyImportSupport() throws CloudException, InternalException {
-        return Requirement.OPTIONAL;
+        return Requirement.REQUIRED;
     }
 
     @Override
-    public @Nullable SSHKeypair getKeypair(@Nonnull String name) throws InternalException, CloudException {
+    public @Nullable SSHKeypair getKeypair(@Nonnull String providerId) throws InternalException, CloudException {
         APITrace.begin(provider, "Keypair.getKeypair");
         try {
             ProviderContext ctx = provider.getContext();
@@ -166,10 +159,6 @@ public class Keypairs implements ShellKeySupport {
             
             
             try {
-            	           
-                
-            	
-            
             	Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
             	
             	if (kSet == null) {
@@ -178,7 +167,7 @@ public class Keypairs implements ShellKeySupport {
             	Iterator<Key> itr = kSet.getKey().iterator();
             	while(itr.hasNext()) {
             		Key k = itr.next();            	
-	            	if( k != null && k.getName() != null & k.getName().equals(name) && k.getFingerprint() != null ) {
+	            	if( k != null && k.getName() != null & k.getName().equals(providerId) && k.getFingerprint() != null ) {
 	                    SSHKeypair kp = new SSHKeypair();
 	
 	                    kp.setFingerprint(k.getFingerprint());
@@ -210,12 +199,22 @@ public class Keypairs implements ShellKeySupport {
     }
 
 	@Override
+    @Deprecated
 	public @Nonnull String getProviderTermForKeypair(@Nonnull Locale locale) {
 		return "keypair";
 	}
 
+    @Nonnull
     @Override
-    public @Nonnull SSHKeypair importKeypair(@Nonnull String name, @Nonnull String material) throws InternalException, CloudException {
+    public ShellKeyCapabilities getCapabilities() throws CloudException, InternalException {
+        if( capabilities == null ) {
+            capabilities = new KeyPairCapabilities(provider);
+        }
+        return capabilities;
+    }
+
+    @Override
+    public @Nonnull SSHKeypair importKeypair(@Nonnull String name, @Nonnull String publicKey) throws InternalException, CloudException {
         APITrace.begin(provider, "Keypair.importKeypair");
         try {
             ProviderContext ctx = provider.getContext();
@@ -229,33 +228,25 @@ public class Keypairs implements ShellKeySupport {
                 throw new CloudException("No region was set for this request.");
             }
 
-            try {
-            	Create action = new Create(name, material);            
-            	
-            	Key k = (Key)DigitalOceanModelFactory.performAction(provider, action, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEY);
-            	
-                SSHKeypair key = new SSHKeypair();
+            Create action = new Create(name, publicKey);
 
-                //In digitalOcean the imported data is the public key value....
-                key.setPublicKey(material);
-                key.setFingerprint(k.getFingerprint());
-                key.setName(name);
-                key.setProviderKeypairId(name);
-                key.setProviderOwnerId(ctx.getAccountNumber());
-                //Its available for all regions
-                ///key.setProviderRegionId(regionId);
-                return key;
+            Key k = (Key)DigitalOceanModelFactory.performAction(provider, action, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEY);
+
+            SSHKeypair key = new SSHKeypair();
+
+            //In digitalOcean the imported data is the public key value....
+            key.setPublicKey(publicKey);
+            key.setFingerprint(k.getFingerprint());
+            key.setName(name);
+            key.setProviderKeypairId(name);
+            key.setProviderOwnerId(ctx.getAccountNumber());
+            //Its available for all regions
+            ///key.setProviderRegionId(regionId);
+            return key;
                 
-            } catch( CloudException e ) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage());
-                throw new CloudException(e);
-			}
-            
-            
-
+        } catch (UnsupportedEncodingException e) {
+            logger.error(e.getMessage());
+            throw new CloudException(e);
         }
         finally {
             APITrace.end();
@@ -318,8 +309,8 @@ public class Keypairs implements ShellKeySupport {
 
 	@Override
 	public boolean isSubscribed() throws CloudException, InternalException {		
-		throw new OperationNotSupportedException("Not sure what this method is for, not yet implemetned");
-	}
+        return true;
+    }
 
 	@Override
 	@Nonnull

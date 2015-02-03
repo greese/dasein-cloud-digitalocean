@@ -23,12 +23,10 @@ import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.gson.JsonSyntaxException;
-
 public interface IDigitalOcean {
 
 	public String toString();
-	public DigitalOceanRestModel fromJson(JSONObject jso) throws JsonSyntaxException, JSONException, CloudException;
+	public DigitalOceanRestModel fromJson(JSONObject jso) throws JSONException, CloudException;
 	
 	
 }

@@ -18,97 +18,69 @@
  */
 package org.dasein.cloud.digitalocean.models;
 
-import java.util.HashMap;
-
+import com.google.gson.annotations.SerializedName;
 import org.dasein.cloud.compute.VmState;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
+import javax.annotation.Nullable;
+
 
 public class Droplet implements DigitalOceanRestModel {
-	Long id;
+	String id;
 	String name;
-	Long image_id;
-	Long region_id;
-	Size size;
-	String ip_address;
-	String private_ip_address;
-	String status;
-	Long event_id;
-	HashMap<String, Object> attr = new HashMap<String,Object>();
- 	
+	Image image;
+	Region region;
 
-	public Long  getId() {
-		return this.id;
+	Size size;
+    @SerializedName("size_slug")
+    String sizeSlug; // this is a workaround for a minimised response on droplet create
+
+	Networks networks;
+	String status;
+
+    public String getSizeSlug() {
+        return sizeSlug;
+    }
+
+    public String getId() {
+
+		return id;
 	}
 	
 	public String getName() {
-		return this.name;
+		return name;
 	}
 	
-	public String getSize() {
-		return this.size.getSlug();
-	}
-	public void setSize(Size s) {
-		this.size = s;
-	}
-	
-	public Long getImageId() {
-		return this.image_id;
+	public Size getSize() {
+		return size;
 	}
 
-	public Long getRegionId() {
-		return this.region_id;
+	public Image getImage() {
+		return image;
+	}
+
+    public Networks getNetworks() {
+        return networks;
+    }
+
+    public Region getRegion() {
+		return region;
 	}
 	
-	public String getPrivateIp() {
-		if (this.private_ip_address == null) {
-			return this.getIp();
-		} else {
-			if (this.private_ip_address.trim().compareTo("") == 0) {
-				return this.getIp();
-			}
-			return this.private_ip_address;
-		}
-	}
-	
-	public String getIp() {
-		return this.ip_address;
-	}
-	
-	public VmState getStatus() {
-		if (this.status.compareTo("active") == 0) {
+	public @Nullable VmState getStatus() {
+		if( "active".equals(status) ) {
 			return VmState.RUNNING;
-		} else if (this.status.compareTo("new") == 0) {
+		}
+        else if( "new".equals(status) ) {
 			return VmState.PENDING;
-		} else if (this.status.compareTo("off") == 0) {
+		}
+        else if( "off".equals(status) ) {
 			return VmState.STOPPED;
-		} else if (this.status.compareTo("archive") == 0) {
+		}
+        else if( "archive".equals(status) ) {
 			return VmState.TERMINATED;
 		}
 		return null;
 	}
 
-	public void setEventId(long long1) {
-		this.event_id = long1;		
-	}	
-	public Long getEventId() {
-		return this.event_id;
-	}
-
-	public String getProvider() {
-		return "DO";
-	}
-
-	public void setAttribute(String str, Object val) {
-		// TODO Auto-generated method stub
-		attr.put(str,  val);
-	}
-	public Object getAttribute(String key) {
-		if (attr.containsKey(key)){ 
-			return attr.get(key);
-		} else {
-			return "";
-		}
-	}
-	
 }

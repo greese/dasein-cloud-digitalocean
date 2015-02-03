@@ -52,16 +52,6 @@ public class DigitalOcean extends AbstractCloud {
     
     private transient volatile DOProvider provider;
 
-    public
-    @Nonnull
-    DOProvider getEC2Provider() {
-        if (provider == null) {
-            provider = DOProvider.valueOf(getProviderName());
-        }
-        return provider;
-    }
-    
-
     public @Nullable String getUrl() throws InternalException, CloudException {
         ProviderContext ctx = getContext();
         String url;
@@ -127,7 +117,7 @@ public class DigitalOcean extends AbstractCloud {
     @Override
     public @Nonnull String getCloudName() {
         ProviderContext ctx = getContext();
-        String name = (ctx == null ? null : ctx.getCloudName());
+        String name = (ctx == null ? null : ctx.getCloud().getCloudName());
 
         return (name == null ? "DigitalOcean" : name);
     }
@@ -137,7 +127,7 @@ public class DigitalOcean extends AbstractCloud {
         // define the information needed to connect to this cloud in the form of context requirements
         // this digitalocean defines a single keypair that any client must provide to the ProviderContext when connecting
         return new ContextRequirements(
-                new ContextRequirements.Field("token", "The Token key used to connect to this cloud", ContextRequirements.FieldType.TEXT, true)
+                new ContextRequirements.Field("token", "The Token key used to connect to this cloud", ContextRequirements.FieldType.TOKEN, true)
         );
     }
 
@@ -155,9 +145,6 @@ public class DigitalOcean extends AbstractCloud {
     public @Nonnull IdentityServices getIdentityServices() {
         return new IdentityServices(this);
     }
-    
-    
-    
 
     @Override
     public @Nonnull String getProviderName() {
@@ -167,7 +154,6 @@ public class DigitalOcean extends AbstractCloud {
         return (name == null ? "DigitalOcean" : name);
     }
 
-   
     @Override
     public @Nullable String testContext() {
         if( logger.isTraceEnabled() ) {
@@ -181,27 +167,15 @@ public class DigitalOcean extends AbstractCloud {
                 return null;
             }
             try {
-            	
-                // TODO: Can we simplify this call so it can  be faster?
-                // return null if they are not
-                // return an account number if they are
-            	//logger.debug("TEST API KEY : " + ctx.getConfigurationValue("token"));
-            	String token = (String)ctx.getConfigurationValue("token");
-            	if (token == null) {
-            		logger.error("No token parameter as provided");
-            		return null;
-            	}
-            	
-        		Regions r = (Regions)DigitalOceanModelFactory.getModel(this, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
-        		if (r.getRegions().size() > 0) {
+
+            	if( getComputeServices().getVirtualMachineSupport().isSubscribed() ) {
         			return ctx.getAccountNumber();
         		}
         		return null;
             	            	
             }
             catch( Throwable t ) {
-                logger.error("Error querying API key: " + t.getMessage());
-                t.printStackTrace();
+                logger.error("Error querying API key: " + t.getMessage(), t);
                 return null;
             }
         }
@@ -235,10 +209,10 @@ public class DigitalOcean extends AbstractCloud {
         	//TODO: Should we use getCloud()? instead of digitalocean ?
             value = System.getProperty("digitalocean.vmproducts");
         }
-        if( value == null ) {
-        	//We should add this resource as example only if we want to enforce it...
-            value = "/org/dasein/cloud/digitalocean/vmproducts.json";
-        }
+//        if( value == null ) {
+//        	//We should add this resource as example only if we want to enforce it...
+//            value = "/org/dasein/cloud/digitalocean/vmproducts.json";
+//        }
         return value;
     }
 }
