@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 ACenterA, Inc.
+ * Copyright (C) 2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
