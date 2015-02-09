@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 20014 ACenterA, Inc.
+ * Copyright (C) 2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -19,7 +19,6 @@
 
 package org.dasein.cloud.digitalocean;
 
-import org.dasein.cloud.digitalocean.identity.DOIdentity;
 import org.dasein.cloud.digitalocean.identity.Keypairs;
 import org.dasein.cloud.identity.AbstractIdentityServices;
 

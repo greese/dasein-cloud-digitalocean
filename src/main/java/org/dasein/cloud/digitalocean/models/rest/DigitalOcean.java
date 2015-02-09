@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 ACenterA, Inc.
+ * Copyright (C) 2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -16,16 +16,16 @@
  * limitations under the License.
  * ====================================================================
  */
+
 package org.dasein.cloud.digitalocean.models.rest;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.digitalocean.models.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 public enum DigitalOcean implements IDigitalOcean {
 	

@@ -1,6 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Dell, Inc.
-
+ * Copyright (C) 2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -20,27 +19,12 @@
 
 package org.dasein.cloud.digitalocean.identity;
 
-import java.io.UnsupportedEncodingException;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.OperationNotSupportedException;
-import org.dasein.cloud.ProviderContext;
-import org.dasein.cloud.Requirement;
+import org.dasein.cloud.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.models.Action;
-import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.Key;
 import org.dasein.cloud.digitalocean.models.Keys;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Resize;
 import org.dasein.cloud.digitalocean.models.actions.sshkey.Create;
 import org.dasein.cloud.digitalocean.models.actions.sshkey.Destroy;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
@@ -49,13 +33,14 @@ import org.dasein.cloud.identity.ServiceAction;
 import org.dasein.cloud.identity.ShellKeyCapabilities;
 import org.dasein.cloud.identity.ShellKeySupport;
 import org.dasein.cloud.util.APITrace;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Locale;
 
 public class Keypairs implements ShellKeySupport {
 	static private final Logger logger = DigitalOcean.getLogger(Keypairs.class);

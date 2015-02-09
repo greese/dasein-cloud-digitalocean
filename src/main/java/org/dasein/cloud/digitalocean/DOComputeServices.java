@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Dell, Inc.
+ * Copyright (C) 2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -20,11 +20,10 @@
 package org.dasein.cloud.digitalocean;
 
 import org.dasein.cloud.compute.AbstractComputeServices;
-import org.dasein.cloud.digitalocean.compute.DOInstance;
 import org.dasein.cloud.digitalocean.compute.DOImage;
+import org.dasein.cloud.digitalocean.compute.DOInstance;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class DOComputeServices extends AbstractComputeServices<DigitalOcean> {
     public DOComputeServices(@Nonnull DigitalOcean cloud) { super(cloud); }

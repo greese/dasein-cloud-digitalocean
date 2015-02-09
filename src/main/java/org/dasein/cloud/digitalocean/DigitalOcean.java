@@ -19,20 +19,12 @@
 
 package org.dasein.cloud.digitalocean;
 
-import java.util.Properties;
+import org.apache.log4j.Logger;
+import org.dasein.cloud.*;
 
 import javax.annotation.Nonnull;
-
 import javax.annotation.Nullable;
-
-import org.apache.log4j.Logger;
-import org.dasein.cloud.AbstractCloud;
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.ContextRequirements;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.ProviderContext;
-import org.dasein.cloud.digitalocean.models.Regions;
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
+import java.util.Properties;
 	
 
 /**

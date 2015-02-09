@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 ACenterA, Inc.
+ * Copyright (C) 2014 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -16,12 +16,13 @@
  * limitations under the License.
  * ====================================================================
  */
+
 package org.dasein.cloud.digitalocean.models;
+
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
 
 public class Images implements DigitalOceanRestModel {
