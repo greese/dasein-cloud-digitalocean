@@ -20,11 +20,10 @@
 package org.dasein.cloud.digitalocean;
 
 import org.dasein.cloud.compute.AbstractComputeServices;
-import org.dasein.cloud.digitalocean.compute.DOInstance;
 import org.dasein.cloud.digitalocean.compute.DOImage;
+import org.dasein.cloud.digitalocean.compute.DOInstance;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class DOComputeServices extends AbstractComputeServices {
     private DigitalOcean cloud;

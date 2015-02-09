@@ -19,14 +19,13 @@
 
 package org.dasein.cloud.digitalocean.models.rest;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.digitalocean.models.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 public enum DigitalOcean implements IDigitalOcean {
 	

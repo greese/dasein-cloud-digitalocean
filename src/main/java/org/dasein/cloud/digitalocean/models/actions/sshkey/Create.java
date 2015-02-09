@@ -38,10 +38,6 @@
  */
 package org.dasein.cloud.digitalocean.models.actions.sshkey;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
-import org.bouncycastle.jce.provider.PBE;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanPostAction;
 import org.json.JSONException;

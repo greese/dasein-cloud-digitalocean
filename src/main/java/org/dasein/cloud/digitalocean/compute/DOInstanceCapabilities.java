@@ -20,19 +20,15 @@
 package org.dasein.cloud.digitalocean.compute;
 
 import org.dasein.cloud.*;
-
-import org.dasein.cloud.compute.Architecture;
-import org.dasein.cloud.compute.ImageClass;
-import org.dasein.cloud.compute.Platform;
-import org.dasein.cloud.compute.VMScalingCapabilities;
-import org.dasein.cloud.compute.VirtualMachineCapabilities;
-import org.dasein.cloud.compute.VmState;
+import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.util.NamingConstraints;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Locale;
 
 /**
  * Describes the capabilities of DigitalOcean with respect to Dasein virtual machine operations.

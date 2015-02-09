@@ -19,10 +19,10 @@
 
 package org.dasein.cloud.digitalocean.models;
 
+import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
 
 public class Images implements DigitalOceanRestModel {

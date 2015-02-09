@@ -38,14 +38,14 @@
  */
 package org.dasein.cloud.digitalocean.models.actions.droplet;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanPostAction;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 public class Create extends DigitalOceanPostAction {	

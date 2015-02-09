@@ -19,7 +19,6 @@
 
 package org.dasein.cloud.digitalocean;
 
-import org.dasein.cloud.digitalocean.identity.DOIdentity;
 import org.dasein.cloud.digitalocean.identity.Keypairs;
 import org.dasein.cloud.identity.AbstractIdentityServices;
 

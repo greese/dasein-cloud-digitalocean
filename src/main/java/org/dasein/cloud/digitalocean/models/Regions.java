@@ -19,12 +19,11 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.dasein.cloud.digitalocean.models.Region;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanGetAction;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class Regions extends  DigitalOceanGetAction implements DigitalOceanRestModel {

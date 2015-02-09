@@ -21,13 +21,14 @@ package org.dasein.cloud.digitalocean.compute;
 
 
 import org.dasein.cloud.*;
-
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
 
 /**
  * Describes the capabilities of DigitalOcean with respect to Dasein image operations.

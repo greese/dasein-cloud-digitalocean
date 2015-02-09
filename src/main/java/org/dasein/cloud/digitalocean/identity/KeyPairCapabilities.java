@@ -19,7 +19,6 @@
 
 package org.dasein.cloud.digitalocean.identity;
 
-import org.bouncycastle.ocsp.Req;
 import org.dasein.cloud.AbstractCapabilities;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;

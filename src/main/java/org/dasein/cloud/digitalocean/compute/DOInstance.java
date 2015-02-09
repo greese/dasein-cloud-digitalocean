@@ -19,37 +19,15 @@
 
 package org.dasein.cloud.digitalocean.compute;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-
-
-import java.util.*;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.protocol.HTTP;
 import org.apache.log4j.Logger;
-import org.dasein.cloud.CloudException;
-import org.dasein.cloud.InternalException;
-import org.dasein.cloud.OperationNotSupportedException;
-import org.dasein.cloud.ProviderContext;
-import org.dasein.cloud.ResourceStatus;
+import org.dasein.cloud.*;
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.models.*;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Destroy;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Reboot;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Resize;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Start;
-import org.dasein.cloud.digitalocean.models.actions.droplet.Stop;
+import org.dasein.cloud.digitalocean.models.actions.droplet.*;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
-import org.dasein.cloud.network.*;
+import org.dasein.cloud.network.IPVersion;
+import org.dasein.cloud.network.RawAddress;
 import org.dasein.cloud.util.APITrace;
 import org.dasein.cloud.util.Cache;
 import org.dasein.cloud.util.CacheLevel;
@@ -58,9 +36,15 @@ import org.dasein.util.uom.storage.Megabyte;
 import org.dasein.util.uom.storage.Storage;
 import org.dasein.util.uom.time.Day;
 import org.dasein.util.uom.time.TimePeriod;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletResponse;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 
 public class DOInstance extends AbstractVMSupport<DigitalOcean> {
