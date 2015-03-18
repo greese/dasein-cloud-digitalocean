@@ -1,15 +1,12 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.dasein</groupId>
     <artifactId>dasein-cloud-digitalocean</artifactId>
     <version>2015.03.1-SNAPSHOT</version>
 
-    <name>Dasein Cloud DigitalOcean</name>
-    <description>
-        An implementation of the Dasein Cloud API for DigitalOcean.
-    </description>
+    <name>Dasein Cloud Digital Ocean</name>
+    <description>Dasein Cloud implementation for the Digital Ocean cloud</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -23,15 +20,14 @@
     </licenses>
 
     <organization>
-        <!-- Leave org as is if contributing back to Dasein Cloud, otherwise your organization goes here -->
         <name>Dell, Inc.</name>
         <url>http://software.dell.com</url>
     </organization>
 
     <scm>
         <connection>scm:git:git://github.com/greese/dasein-cloud-digitalocean.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/greese/dasein-cloud-digitalocean.git</developerConnection>
-        <url>http://github.com/greese/dasein-cloud-digitalocean</url>
+        <developerConnection>scm:git:ssh://git@github.com/greese/dasein-cloud-digitalocean.git </developerConnection>
+        <url>http://github.com/greese/dasein-cloud-digitalocean.git </url>
     </scm>
 
     <parent>
@@ -131,11 +127,11 @@
                     <quiet>true</quiet>
                     <links>
                         <link>http://java.sun.com/javase/6/docs/api/</link>
-                        <link>http://www.dasein.org/api/dasein-cloud-2014-07</link>
+                        <link>http://www.dasein.org/api/dasein-cloud-2012-09</link>
                         <link>http://www.dasein.org/api/dasein-utils</link>
                     </links>
                     <stylesheetfile>dasein-javadoc.css</stylesheetfile>
-                    <footer/>
+                    <footer />
                 </configuration>
             </plugin>
             <plugin>
@@ -156,7 +152,7 @@
                         <exclude>**/LICENSE-APACHE.txt</exclude>
                     </excludes>
                     <properties>
-                        <year>2014</year>
+                        <year>2012-2015</year>
                         <copyrightHolder>Dell, Inc.</copyrightHolder>
                     </properties>
                 </configuration>
@@ -219,9 +215,9 @@
                             <value>${apiSharedKey}</value>
                         </property>
                     </systemProperties>
-                    <includes>
-                        <include>**/TestSuite.java</include>
-                    </includes>
+                    <excludes>
+                        <exclude>**/TestSuite.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -255,13 +251,27 @@
 
     <developers>
         <developer>
-            <name>Francis Lavalliere</name>
-            <id>ACenterA</id>
-            <email>francis.lavalliere -at- acentera -dot- com</email>
+            <name>George Reese</name>
+            <id>greese</id>
+            <email>george.reese -at- enstratus -dot- com</email>
+            <organization>enStratus</organization>
+            <roles>
+                <role>Java Developer</role>
+                <role>PMC</role>
+            </roles>
+            <url>http://www.enstratus.com</url>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <name>Morgan Catlin</name>
+            <id>sylistron</id>
+            <email>morgan.catlin -at- valtira -dot- com</email>
             <organization>enStratus</organization>
             <roles>
                 <role>Java Developer</role>
             </roles>
+            <url>http://www.valtira.com</url>
+            <timezone>-6</timezone>
         </developer>
     </developers>
 
