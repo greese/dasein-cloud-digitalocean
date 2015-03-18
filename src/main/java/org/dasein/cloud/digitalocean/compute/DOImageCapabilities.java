@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Dell, Inc.
+ * Copyright (C) 2012-2015 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -135,5 +135,10 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     @Override
     public boolean supportsPublicLibrary(@Nonnull ImageClass imageClass) {
         return true;
+    }
+
+    @Override
+    public boolean imageCaptureDestroysVM() throws CloudException, InternalException{
+        return false;
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Dell, Inc.
+ * Copyright (C) 2012-2015 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -25,19 +25,17 @@ import org.dasein.cloud.digitalocean.compute.DOInstance;
 
 import javax.annotation.Nonnull;
 
-public class DOComputeServices extends AbstractComputeServices {
-    private DigitalOcean cloud;
-    
-    public DOComputeServices(@Nonnull DigitalOcean cloud) { this.cloud = cloud; }
+public class DOComputeServices extends AbstractComputeServices<DigitalOcean> {
+    public DOComputeServices(@Nonnull DigitalOcean cloud) { super(cloud); }
     
     @Override
     public @Nonnull DOInstance getVirtualMachineSupport() {
-        return new DOInstance(cloud);
+        return new DOInstance(getProvider());
     }
     
     @Override
     public @Nonnull DOImage getImageSupport() {
-        return new DOImage(cloud);
+        return new DOImage(getProvider());
     }
     
 }

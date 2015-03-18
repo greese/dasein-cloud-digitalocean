@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Dell, Inc.
+ * Copyright (C) 2012-2015 Dell, Inc.
  * See annotations for authorship information
  *
  * ====================================================================
@@ -269,4 +269,19 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 			InternalException {
 		return false;
 	}
+
+    @Override
+    public boolean isVMProductDCConstrained() throws CloudException, InternalException{
+        return false;
+    }
+
+    @Override
+    public boolean supportsCloudStoredShellKey() throws CloudException, InternalException{
+        return true;
+    }
+
+    @Override
+    public boolean supportsClientRequestToken() throws CloudException, InternalException{
+        return false;
+    }
 }

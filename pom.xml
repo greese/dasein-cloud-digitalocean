@@ -3,12 +3,10 @@
 
     <groupId>org.dasein</groupId>
     <artifactId>dasein-cloud-digitalocean</artifactId>
-    <version>2014.11.1</version>
+    <version>2015.03.2-SNAPSHOT</version>
 
-    <name>Dasein Cloud DigitalOcean</name>
-    <description>
-        An implementation of the Dasein Cloud API for DigitalOcean.
-    </description>
+    <name>Dasein Cloud Digital Ocean</name>
+    <description>Dasein Cloud implementation for the Digital Ocean cloud</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -22,15 +20,14 @@
     </licenses>
 
     <organization>
-        <!-- Leave org as is if contributing back to Dasein Cloud, otherwise your organization goes here -->
         <name>Dell, Inc.</name>
         <url>http://software.dell.com</url>
     </organization>
 
     <scm>
         <connection>scm:git:git://github.com/greese/dasein-cloud-digitalocean.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/greese/dasein-cloud-digitalocean.git</developerConnection>
-        <url>http://github.com/greese/dasein-cloud-digitalocean</url>
+        <developerConnection>scm:git:ssh://git@github.com/greese/dasein-cloud-digitalocean.git </developerConnection>
+        <url>http://github.com/greese/dasein-cloud-digitalocean.git </url>
     </scm>
 
     <parent>
@@ -50,9 +47,20 @@
         <dependency>
             <groupId>org.dasein</groupId>
             <artifactId>dasein-cloud-core</artifactId>
-            <version>2014.11.1</version>
+            <version>2015.03.1</version>
             <scope>compile</scope>
             <optional>false</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.dasein</groupId>
@@ -78,7 +86,7 @@
         <dependency>
             <groupId>org.dasein</groupId>
             <artifactId>dasein-cloud-test</artifactId>
-            <version>2014.11.1</version>
+            <version>2015.03.1</version>
             <scope>test</scope>
             <optional>false</optional>
         </dependency>
@@ -124,7 +132,7 @@
                     <quiet>true</quiet>
                     <links>
                         <link>http://java.sun.com/javase/6/docs/api/</link>
-                        <link>http://www.dasein.org/api/dasein-cloud-2014-07</link>
+                        <link>http://www.dasein.org/api/dasein-cloud-2012-09</link>
                         <link>http://www.dasein.org/api/dasein-utils</link>
                     </links>
                     <stylesheetfile>dasein-javadoc.css</stylesheetfile>
@@ -149,7 +157,7 @@
                         <exclude>**/LICENSE-APACHE.txt</exclude>
                     </excludes>
                     <properties>
-                        <year>2014</year>
+                        <year>2012-2015</year>
                         <copyrightHolder>Dell, Inc.</copyrightHolder>
                     </properties>
                 </configuration>
@@ -248,13 +256,27 @@
 
     <developers>
         <developer>
-            <name>Francis Lavalliere</name>
-            <id>ACenterA</id>
-            <email>francis.lavalliere -at- acentera -dot- com</email>
+            <name>George Reese</name>
+            <id>greese</id>
+            <email>george.reese -at- enstratus -dot- com</email>
+            <organization>enStratus</organization>
+            <roles>
+                <role>Java Developer</role>
+                <role>PMC</role>
+            </roles>
+            <url>http://www.enstratus.com</url>
+            <timezone>-6</timezone>
+        </developer>
+        <developer>
+            <name>Morgan Catlin</name>
+            <id>sylistron</id>
+            <email>morgan.catlin -at- valtira -dot- com</email>
             <organization>enStratus</organization>
             <roles>
                 <role>Java Developer</role>
             </roles>
+            <url>http://www.valtira.com</url>
+            <timezone>-6</timezone>
         </developer>
     </developers>
 
