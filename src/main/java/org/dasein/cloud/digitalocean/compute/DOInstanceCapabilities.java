@@ -269,4 +269,19 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 			InternalException {
 		return false;
 	}
+
+    @Override
+    public boolean isVMProductDCConstrained() throws CloudException, InternalException{
+        return false;
+    }
+
+    @Override
+    public boolean supportsCloudStoredShellKey() throws CloudException, InternalException{
+        return true;
+    }
+
+    @Override
+    public boolean supportsClientRequestToken() throws CloudException, InternalException{
+        return false;
+    }
 }

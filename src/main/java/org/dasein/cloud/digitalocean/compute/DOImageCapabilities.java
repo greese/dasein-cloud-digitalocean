@@ -136,4 +136,9 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     public boolean supportsPublicLibrary(@Nonnull ImageClass imageClass) {
         return true;
     }
+
+    @Override
+    public boolean imageCaptureDestroysVM() throws CloudException, InternalException{
+        return false;
+    }
 }
