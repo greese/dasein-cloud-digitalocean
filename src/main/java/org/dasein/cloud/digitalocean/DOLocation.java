@@ -181,7 +181,18 @@ public class DOLocation implements DataCenterServices {
     	r.setProviderRegionId(region.getSlug());
     	r.setName(region.getName());
     	r.setActive(region.getActive());
-    	r.setJurisdiction(region.getSlug().substring(0,2).toUpperCase());
+        String slugName = region.getSlug().substring(0,2).toUpperCase();
+        String jurisdiction = Jurisdiction.US.name();
+        if(slugName.equals("NYC") || slugName.equals("SFO")){
+
+        }
+        else if(slugName.equals("AMS") || slugName.equals("LON")){
+            jurisdiction = Jurisdiction.EU.name();
+        }
+        else if(slugName.equals("SGP")){
+            jurisdiction = Jurisdiction.SG.name();
+        }
+    	r.setJurisdiction(jurisdiction);
     	r.setAvailable(region.getActive());
     	return r;
     }
