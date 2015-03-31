@@ -67,8 +67,8 @@ public class DigitalOceanModelFactory {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout+ ")");
         }
 
-        //Ignore pagination use of per_page=-1 for all requests
-        String strUrl = endpoint + "?per_page=-1";
+        //TODO: Implement proper paging rather then oversized page size requests
+        String strUrl = endpoint + "?per_page=1000";
 
         if( logger.isTraceEnabled() ) {
             logger.trace("CALLING - " + method + " "  + endpoint);
