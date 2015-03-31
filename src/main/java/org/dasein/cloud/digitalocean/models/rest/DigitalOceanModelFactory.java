@@ -36,10 +36,12 @@ import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudErrorType;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.CloudProvider;
+import org.dasein.cloud.InternalException;
 import org.dasein.cloud.digitalocean.models.Action;
 import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.IDigitalOcean;
 import org.dasein.cloud.digitalocean.models.actions.droplet.Create;
+import org.dasein.cloud.identity.SSHKeypair;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 public class DigitalOceanModelFactory {
@@ -370,7 +373,20 @@ public class DigitalOceanModelFactory {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
 		}
 
-		try {
+        HashMap<String, SSHKeypair> keypairByName = new HashMap<String, SSHKeypair>();
+        HashMap<String, SSHKeypair> keypairById = new HashMap<String, SSHKeypair>();
+        try {
+            Iterator<SSHKeypair> i = provider.getIdentityServices().getShellKeySupport().list().iterator();
+            while (i.hasNext()) {
+                SSHKeypair next = i.next();
+                keypairByName.put(next.getName(), next);
+                keypairById.put(next.getProviderKeypairId(), next);
+            }
+        } catch (InternalException e) {
+            throw new CloudException ("Could not retrieve account ssh key list for " + provider.getContext().getAccountNumber(), e);
+        }
+
+        try {
 			Create action = new Create(dropletName, sizeId, theImageId, regionId);
 			List<Long> ssh_key_ids = new ArrayList<Long>();
 			//Extra parameter is not part of DaseinCloud.... as its cloud specific
@@ -407,7 +423,14 @@ public class DigitalOceanModelFactory {
 		
 			if(bootstrapKey!=null) {
 				if (!bootstrapKey.isEmpty()) {
-					ssh_key_ids.add(Long.valueOf(bootstrapKey)); // FIXME(maria): Long??? it's a string
+                    String id = null;
+                    if (keypairById.containsKey(bootstrapKey))
+                        id = keypairById.get(bootstrapKey).getProviderKeypairId();
+                    else if (keypairByName.containsKey(bootstrapKey))
+                        id = keypairByName.get(bootstrapKey).getProviderKeypairId();
+                    else
+                        throw new CloudException("Received a bootstrap key but it doesn't seem to match an existing key pair");
+					ssh_key_ids.add(Long.valueOf(id)); // FIXME(maria): Long??? it's a string
 				}
 			}
 			action.setSshKeyIds(ssh_key_ids);
