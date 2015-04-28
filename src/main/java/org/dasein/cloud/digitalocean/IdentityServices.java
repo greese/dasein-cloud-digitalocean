@@ -22,13 +22,14 @@ package org.dasein.cloud.digitalocean;
 import org.dasein.cloud.digitalocean.identity.Keypairs;
 import org.dasein.cloud.identity.AbstractIdentityServices;
 
-public class IdentityServices extends AbstractIdentityServices {
-    private DigitalOcean cloud;
-    
-    public IdentityServices(DigitalOcean cloud) { this.cloud = cloud; }
+public class IdentityServices extends AbstractIdentityServices<DigitalOcean> {
+
+    protected IdentityServices(DigitalOcean provider) {
+        super(provider);
+    }
 
     @Override
     public Keypairs getShellKeySupport() {
-        return new Keypairs(cloud);
+        return new Keypairs(getProvider());
     }
 }
