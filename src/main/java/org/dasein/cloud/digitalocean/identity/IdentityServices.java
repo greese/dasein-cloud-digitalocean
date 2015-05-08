@@ -25,7 +25,7 @@ import org.dasein.cloud.identity.AbstractIdentityServices;
 
 public class IdentityServices extends AbstractIdentityServices<DigitalOcean> {
 
-    protected IdentityServices(DigitalOcean provider) {
+    public IdentityServices(DigitalOcean provider) {
         super(provider);
     }
 

@@ -21,6 +21,9 @@ package org.dasein.cloud.digitalocean;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.*;
+import org.dasein.cloud.digitalocean.compute.DOComputeServices;
+import org.dasein.cloud.digitalocean.dc.DOLocation;
+import org.dasein.cloud.digitalocean.identity.IdentityServices;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

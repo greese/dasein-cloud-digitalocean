@@ -214,10 +214,14 @@
                             <name>token</name>
                             <value>${apiSharedKey}</value>
                         </property>
+                        <property>
+                            <name>test.machineImage</name>
+                            <value>${test.machineImage}</value>
+                        </property>
                     </systemProperties>
-                    <excludes>
-                        <exclude>**/TestSuite.java</exclude>
-                    </excludes>
+                    <includes>
+                        <include>**/TestSuite.java</include>
+                    </includes>
                 </configuration>
             </plugin>
             <plugin>
