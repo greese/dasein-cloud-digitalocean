@@ -17,8 +17,9 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.identity;
 
+import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.identity.Keypairs;
 import org.dasein.cloud.identity.AbstractIdentityServices;
 
