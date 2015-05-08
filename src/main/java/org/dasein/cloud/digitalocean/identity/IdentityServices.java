@@ -17,25 +17,19 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.identity;
 
-import org.dasein.cloud.compute.AbstractComputeServices;
-import org.dasein.cloud.digitalocean.compute.DOImage;
-import org.dasein.cloud.digitalocean.compute.DOInstance;
+import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.identity.Keypairs;
+import org.dasein.cloud.identity.AbstractIdentityServices;
 
-import javax.annotation.Nonnull;
-
-public class DOComputeServices extends AbstractComputeServices<DigitalOcean> {
-    public DOComputeServices(@Nonnull DigitalOcean cloud) { super(cloud); }
+public class IdentityServices extends AbstractIdentityServices {
+    private DigitalOcean cloud;
     
+    public IdentityServices(DigitalOcean cloud) { this.cloud = cloud; }
+
     @Override
-    public @Nonnull DOInstance getVirtualMachineSupport() {
-        return new DOInstance(getProvider());
+    public Keypairs getShellKeySupport() {
+        return new Keypairs(cloud);
     }
-    
-    @Override
-    public @Nonnull DOImage getImageSupport() {
-        return new DOImage(getProvider());
-    }
-    
 }

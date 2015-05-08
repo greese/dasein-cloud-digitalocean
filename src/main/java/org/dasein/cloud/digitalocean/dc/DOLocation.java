@@ -17,13 +17,15 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.dc;
 
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.InternalException;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.dc.*;
+import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.NoContextException;
 import org.dasein.cloud.digitalocean.models.Regions;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.util.APITrace;
@@ -39,13 +41,14 @@ import java.util.*;
 public class DOLocation implements DataCenterServices {
     static private final Logger logger = DigitalOcean.getLogger(DOLocation.class);
 
-    private DigitalOcean provider;
+    private                    DigitalOcean             provider;
     private transient volatile DODataCenterCapabilities capabilities;
 
-    DOLocation(@Nonnull DigitalOcean provider) { this.provider = provider; }
+    DOLocation(@Nonnull DigitalOcean provider) {
+        this.provider = provider;
+    }
 
-    @Nonnull
-    @Override
+    @Nonnull @Override
     public DataCenterCapabilities getCapabilities() throws InternalException, CloudException {
         if( capabilities == null ) {
             capabilities = new DODataCenterCapabilities(provider);
