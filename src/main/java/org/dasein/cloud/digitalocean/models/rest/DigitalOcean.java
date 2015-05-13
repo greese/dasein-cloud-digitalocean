@@ -35,7 +35,8 @@ public enum DigitalOcean implements IDigitalOcean {
 	DROPLET,
 	SIZES,
 	SIZE,
-	IMAGES,
+    IMAGES_PUBLIC, // only public
+    IMAGES, // all images
 	IMAGE,	
 	ACTIONS,
 	ACTION,
@@ -51,7 +52,8 @@ public enum DigitalOcean implements IDigitalOcean {
 		case REGION: return "v2/regions/%s";
 		case DROPLETS: return "v2/droplets";
         case DROPLET: return "v2/droplets/%s";
-		case IMAGES: return "v2/images";
+		case IMAGES_PUBLIC: return "v2/images/?public=true";
+        case IMAGES: return "v2/images/";
 		case IMAGE: return "v2/images/%s";
 		case SIZES: return "v2/sizes";
 		case SIZE: return "v2/size/%s";
@@ -149,7 +151,8 @@ public enum DigitalOcean implements IDigitalOcean {
 			case IMAGE: {
 				return gson.fromJson(jso.getJSONObject("image").toString(), Image.class);
 			}
-			case IMAGES: {
+            case IMAGES:
+			case IMAGES_PUBLIC: {
 				JSONArray jsArray = jso.getJSONArray("images");
 				Images images = new Images();
 						
@@ -157,6 +160,10 @@ public enum DigitalOcean implements IDigitalOcean {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Image.class);
 					images.addImage((Image)u);
 				}
+                JSONObject meta = jso.getJSONObject("meta");
+                if( meta.has("total") ) {
+                    images.setTotal(meta.getInt("total"));
+                }
 				
 				return images;
 			}

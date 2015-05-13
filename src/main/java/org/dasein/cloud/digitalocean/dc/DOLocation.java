@@ -44,7 +44,7 @@ public class DOLocation implements DataCenterServices {
     private                    DigitalOcean             provider;
     private transient volatile DODataCenterCapabilities capabilities;
 
-    DOLocation(@Nonnull DigitalOcean provider) {
+    public DOLocation(@Nonnull DigitalOcean provider) {
         this.provider = provider;
     }
 
