@@ -17,10 +17,11 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.dc;
 
 import org.dasein.cloud.AbstractCapabilities;
 import org.dasein.cloud.dc.DataCenterCapabilities;
+import org.dasein.cloud.digitalocean.DigitalOcean;
 
 import java.util.Locale;
 

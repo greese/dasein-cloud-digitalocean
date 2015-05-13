@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.dasein.cloud.*;
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.models.Image;
 import org.dasein.cloud.digitalocean.models.Images;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.ServiceAction;
@@ -37,6 +38,7 @@ import org.dasein.util.uom.time.TimePeriod;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 public class DOImage extends AbstractImageSupport<DigitalOcean> {
@@ -281,21 +283,13 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
             if (ctx == null) {
                 throw new CloudException("No context was set for this request");
             }
-
-            ImageFilterOptions options = ImageFilterOptions.getInstance();
-
-            for (MachineImage image : searchPublicImages(options)) {
-                if (image.getProviderMachineImageId().equals(providerImageId)) {
-                    return image;
-                }
-            }
-            for (MachineImage image : listImages(options)) {
-                if (image.getProviderMachineImageId().equals(providerImageId)) {
-                    return image;
-                }
-            }
-            return null;
-        } finally {
+            Image image = (Image) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGE, providerImageId);
+            return toImage(image);
+        }
+        catch( UnsupportedEncodingException e ) {
+            throw new CloudException(e);
+        }
+        finally {
             APITrace.end();
         }
     }
@@ -304,7 +298,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     public boolean isImageSharedWithPublic(@Nonnull String machineImageId) throws CloudException, InternalException {
         APITrace.begin(provider, "Image.isImageSharedWithPublic");
         try {
-            MachineImage image = getMachineImage(machineImageId);
+            MachineImage image = getImage(machineImageId);
 
             if (image == null) {
                 return false;
