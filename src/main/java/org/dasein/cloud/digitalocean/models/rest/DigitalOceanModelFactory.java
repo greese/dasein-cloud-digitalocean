@@ -76,7 +76,7 @@ public class DigitalOceanModelFactory {
         HttpResponse response;
         String responseBody;
         try {
-            response = sendRequest(method, token, endpoint, timeout, action);
+            response = sendRequest(method, token, strUrl, timeout, action);
             responseBody = IOUtils.toString(response.getEntity().getContent());
             if( wire.isDebugEnabled() ) {
                 wire.debug(responseBody);

@@ -17,9 +17,10 @@
  * ====================================================================
  */
 
-package org.dasein.cloud.digitalocean;
+package org.dasein.cloud.digitalocean.compute;
 
 import org.dasein.cloud.compute.AbstractComputeServices;
+import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.compute.DOImage;
 import org.dasein.cloud.digitalocean.compute.DOInstance;
 
