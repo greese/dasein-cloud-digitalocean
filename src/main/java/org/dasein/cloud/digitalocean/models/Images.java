@@ -21,19 +21,30 @@ package org.dasein.cloud.digitalocean.models;
 
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
 public class Images implements DigitalOceanRestModel {
 
-	Set<Image> sImage = new HashSet<Image>();
-	
-	public void addImage(Image d) {
-		sImage.add(d);		
-	}
-	
-	public Set<Image> getImages() {
-		return sImage;
-	}
+    List<Image> sImage = new ArrayList<Image>();
+    private int total;
+
+    public void addImage(Image d) {
+        sImage.add(d);
+    }
+
+    public List<Image> getImages() {
+        return sImage;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
+    }
+
+    public int getTotal() {
+        return total;
+    }
 }
