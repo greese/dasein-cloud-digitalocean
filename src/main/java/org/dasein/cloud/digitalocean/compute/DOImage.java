@@ -193,7 +193,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     }
 
 
-    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image image) throws InternalException {
+    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image image) throws InternalException, CloudException {
         if (image == null) {
             return null;
         }
@@ -245,7 +245,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         return machineImage;
     }
 
-    private ResourceStatus toStatus(org.dasein.cloud.digitalocean.models.Image image) throws InternalException {
+    private ResourceStatus toStatus(org.dasein.cloud.digitalocean.models.Image image) throws InternalException, CloudException {
         if (image == null) {
             return null;
         }
