@@ -68,15 +68,13 @@ public class DigitalOceanModelFactory {
         }
 
         //TODO: Implement proper paging rather then oversized page size requests
-        String strUrl = endpoint + "?per_page=1000";
-
         if( logger.isTraceEnabled() ) {
             logger.trace("CALLING - " + method + " "  + endpoint);
         }
         HttpResponse response;
         String responseBody;
         try {
-            response = sendRequest(method, token, strUrl, timeout, action);
+            response = sendRequest(method, token, endpoint, timeout, action);
             responseBody = IOUtils.toString(response.getEntity().getContent());
             if( wire.isDebugEnabled() ) {
                 wire.debug(responseBody);
@@ -197,7 +195,7 @@ public class DigitalOceanModelFactory {
                 }
             }
             if (method == RESTMethod.DELETE && (response.getStatusLine().getStatusCode() != 204)) {
-                //Error occured
+                //Error occurred
                 throw new CloudException("Delete method returned unexpected code, despite retrying.");
             }
             return response;
@@ -218,17 +216,31 @@ public class DigitalOceanModelFactory {
         }
     }
 
-	public static DigitalOceanRestModel getModel(CloudProvider provider, DigitalOcean model) throws UnsupportedEncodingException, CloudException {
+    public static DigitalOceanRestModel getModel(CloudProvider provider, DigitalOcean model) throws UnsupportedEncodingException, CloudException {
+        return getModel(provider, model, 0);
+    }
+
+	public static DigitalOceanRestModel getModel(CloudProvider provider, DigitalOcean model, int page) throws UnsupportedEncodingException, CloudException {
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".getModel(" + provider + "," +  model + ")");
         }
 			
-		String token = (String)provider.getContext().getConfigurationValue("token");
+		String token = (String) provider.getContext().getConfigurationValue("token");
     	
-		try {		
-			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model), 15000);
-			
-			JSONObject jso = new JSONObject(s);
+		try {
+            StringBuilder urlBuilder = new StringBuilder();
+            urlBuilder.append(getApiUrl(provider)).append(getEndpoint(model));
+            if( page > 0 ) {
+                if( urlBuilder.indexOf("?") > 0 ) {
+                    urlBuilder.append('&');
+                }
+                else {
+                    urlBuilder.append('?');
+                }
+                urlBuilder.append("page=").append(page);
+            }
+			String responseText = performHttpRequest(RESTMethod.GET, token, urlBuilder.toString(), 15000);
+			JSONObject jso = new JSONObject(responseText);
 								
 			return model.fromJson(jso);
         } catch (JSONException e) {
