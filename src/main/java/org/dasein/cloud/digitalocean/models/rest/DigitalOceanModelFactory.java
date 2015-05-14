@@ -72,12 +72,14 @@ public class DigitalOceanModelFactory {
             logger.trace("CALLING - " + method + " "  + endpoint);
         }
         HttpResponse response;
-        String responseBody;
+        String responseBody = null;
         try {
             response = sendRequest(method, token, endpoint, timeout, action);
-            responseBody = IOUtils.toString(response.getEntity().getContent());
-            if( wire.isDebugEnabled() ) {
-                wire.debug(responseBody);
+            if( response.getEntity() != null ) {
+                responseBody = IOUtils.toString(response.getEntity().getContent());
+                if( wire.isDebugEnabled() ) {
+                    wire.debug(responseBody);
+                }
             }
             if (logger.isTraceEnabled()) {
                 logger.trace("RECEIVED - " + "[" + response.getStatusLine().getStatusCode() + "] " + responseBody);
