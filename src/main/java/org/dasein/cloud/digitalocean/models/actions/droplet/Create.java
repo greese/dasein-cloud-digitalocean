@@ -58,7 +58,7 @@ public class Create extends DigitalOceanPostAction {
 	
 	//Optional
 	boolean ipv6 = false;
-	ArrayList<Long> ssh_key_ids = new ArrayList<Long>();
+	List<String> ssh_key_ids = new ArrayList<String>();
 	boolean private_networking = true;
 	boolean backups_enabled = false;
 	
@@ -77,8 +77,7 @@ public class Create extends DigitalOceanPostAction {
 		this.region = String.valueOf(regionId);
 	}
 
-	public void setSshKeyIds(List<Long> keyIds) {
-		Iterator<Long> itr = keyIds.iterator();
+	public void setSshKeyIds(List<String> keyIds) {
 		ssh_key_ids.clear();
 		ssh_key_ids.addAll(keyIds);
 	}
@@ -98,9 +97,7 @@ public class Create extends DigitalOceanPostAction {
 	public boolean getBackupsEnabled() {		
 		return this.backups_enabled;		
 	}
-	
-	
-	
+
 	public JSONObject getParameters() throws CloudException, JSONException {
 		JSONObject postData = new JSONObject();
 
@@ -126,10 +123,8 @@ public class Create extends DigitalOceanPostAction {
 		
 		postData.put("region",  this.region);
 		
-		if (this.ssh_key_ids != null) {
-			if (!this.ssh_key_ids.isEmpty()) { 
-				postData.put("ssh_keys", this.ssh_key_ids);
-			}
+		if (this.ssh_key_ids != null && !this.ssh_key_ids.isEmpty()) {
+            postData.put("ssh_keys", this.ssh_key_ids);
 		}
 
 		postData.put("private_networking", this.private_networking);			

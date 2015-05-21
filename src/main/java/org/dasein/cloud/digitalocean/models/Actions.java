@@ -21,19 +21,22 @@ package org.dasein.cloud.digitalocean.models;
 
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
-
 public class Actions implements DigitalOceanRestModel {
-	
-	Set<Action> sAction = new HashSet<Action>();
-	
-	public void addAction(Action r) {
-		sAction.add(r);		
-	}
-	
-	public Set<Action> getAction() {
-		return sAction;
-	}
+
+    private List<Action> actions;
+
+    public void addAction(Action r) {
+        getActions().add(r);
+    }
+
+    public List<Action> getActions() {
+        if( actions == null ) {
+            actions = new ArrayList<Action>();
+        }
+        return actions;
+    }
 }

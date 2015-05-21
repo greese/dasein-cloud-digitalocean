@@ -19,6 +19,26 @@
 
 package org.dasein.cloud.digitalocean;
 
+import org.apache.http.Consts;
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.GzipDecompressingEntity;
+import org.apache.http.conn.params.ConnRoutePNames;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
+import org.apache.http.protocol.HttpContext;
 import org.apache.log4j.Logger;
 import org.dasein.cloud.*;
 import org.dasein.cloud.digitalocean.compute.DOComputeServices;
@@ -27,6 +47,7 @@ import org.dasein.cloud.digitalocean.identity.IdentityServices;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.Properties;
 	
 
@@ -180,34 +201,73 @@ public class DigitalOcean extends AbstractCloud {
             }
         }
     }
-    
-    public @Nonnull String getVMProductsResource() {
+
+    public @Nonnull HttpClient getClient() throws InternalException {
+        return getClient(false);
+    }
+
+    public @Nonnull HttpClient getClient(boolean multipart) throws InternalException {
         ProviderContext ctx = getContext();
-        String value;
-       
         if( ctx == null ) {
-            value = null;
+            throw new InternalException("No context was specified for this request");
         }
-        else {
 
-            Properties p = ctx.getCustomProperties();
+        final HttpParams params = new BasicHttpParams();
+        int timeout = 15000;
+        HttpConnectionParams.setConnectionTimeout(params, timeout);
+        HttpConnectionParams.setSoTimeout(params, timeout);
 
-            if( p == null ) {
-                value = null;
+
+        HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+        if( !multipart ) {
+            HttpProtocolParams.setContentCharset(params, Consts.UTF_8.toString());
+        }
+        HttpProtocolParams.setUserAgent(params, "Dasein Cloud");
+
+        Properties p = ctx.getCustomProperties();
+        if( p != null ) {
+            String proxyHost = p.getProperty("proxyHost");
+            String proxyPortStr = p.getProperty("proxyPort");
+            int proxyPort = 0;
+            if( proxyPortStr != null ) {
+                proxyPort = Integer.parseInt(proxyPortStr);
             }
-            else {            	
-                value = p.getProperty("vmproducts");
+            if( proxyHost != null && proxyHost.length() > 0 && proxyPort > 0 ) {
+                params.setParameter(ConnRoutePNames.DEFAULT_PROXY,
+                        new HttpHost(proxyHost, proxyPort)
+                );
             }
         }
-        if( value == null ) {
-        	
-        	//TODO: Should we use getCloud()? instead of digitalocean ?
-            value = System.getProperty("digitalocean.vmproducts");
-        }
-//        if( value == null ) {
-//        	//We should add this resource as example only if we want to enforce it...
-//            value = "/org/dasein/cloud/digitalocean/vmproducts.json";
-//        }
-        return value;
+        DefaultHttpClient client = new DefaultHttpClient(params);
+        client.addRequestInterceptor(new HttpRequestInterceptor() {
+            public void process(
+                    final HttpRequest request,
+                    final HttpContext context) throws HttpException, IOException {
+                if( !request.containsHeader("Accept-Encoding") ) {
+                    request.addHeader("Accept-Encoding", "gzip");
+                }
+                request.setParams(params);
+            }
+        });
+        client.addResponseInterceptor(new HttpResponseInterceptor() {
+            public void process(
+                    final HttpResponse response,
+                    final HttpContext context) throws HttpException, IOException {
+                HttpEntity entity = response.getEntity();
+                if( entity != null ) {
+                    Header header = entity.getContentEncoding();
+                    if( header != null ) {
+                        for( HeaderElement codec : header.getElements() ) {
+                            if( codec.getName().equalsIgnoreCase("gzip") ) {
+                                response.setEntity(
+                                        new GzipDecompressingEntity(response.getEntity()));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return client;
     }
 }

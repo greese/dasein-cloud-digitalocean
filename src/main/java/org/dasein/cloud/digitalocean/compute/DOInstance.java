@@ -78,19 +78,51 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         	
     		Resize action = new Resize(newProductId);            
 
-            try {
-            	DigitalOceanModelFactory.performAction(getProvider(), action, vmId);
-            	vm = getVirtualMachine(vmId);
-            	return vm;
-            } catch( CloudException e ) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage());
-                throw new CloudException(e);
-			}
-            
+            DigitalOceanModelFactory.performAction(getProvider(), action, vmId);
+            vm = getVirtualMachine(vmId);
+            return vm;
+        } catch( CloudException e ) {
+            logger.error(e.getMessage());
+            throw new CloudException(e);
         } finally {
+            APITrace.end();
+        }
+    }
+
+    /**
+     * Wait for specified number of minutes for all pending droplet events to complete
+     * @param instanceId Id of the droplet
+     * @param timeout Time in minutes to wait for events to complete
+     * @throws InternalException
+     * @throws CloudException
+     */
+    void waitForAllDropletEventsToComplete(@Nonnull String instanceId, int timeout) throws InternalException, CloudException {
+        APITrace.begin(getProvider(), "listVirtualMachineStatus");
+        try {
+            // allow maximum five minutes for events to complete
+            long wait = System.currentTimeMillis() + timeout * 60 * 1000;
+            boolean eventsPending = false;
+            while( System.currentTimeMillis() < wait ) {
+                Actions actions = DigitalOceanModelFactory.getDropletEvents(getProvider(), instanceId);
+                for( Action action : actions.getActions() ) {
+                    if( "in-progress".equalsIgnoreCase(action.getStatus()) ) {
+                        eventsPending = true;
+                    }
+                }
+                if( !eventsPending ) {
+                    break;
+                }
+                try {
+                    // must be careful here not to cause rate limits
+                    Thread.sleep(30000);
+                }
+                catch( InterruptedException e ) {
+                    break;
+                }
+            }
+            // if events are still pending the cloud will fail the next operation anyway
+        }
+        finally {
             APITrace.end();
         }
     }
@@ -99,24 +131,18 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public void start(@Nonnull String instanceId) throws InternalException, CloudException {
         APITrace.begin(getProvider(), "startVM");
         try {
+            waitForAllDropletEventsToComplete(instanceId, 5);
             VirtualMachine vm = getVirtualMachine(instanceId);
-
             if( vm == null ) {
                 throw new CloudException("No such instance: " + instanceId);
             }
-                        
-            Start action = new Start();            
-            
-            
-            try {
-            	Action evt = DigitalOceanModelFactory.performAction(getProvider(), action, instanceId);
-            } catch( CloudException e ) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage());
-                throw new CloudException(e);
-			}
+            // only start if droplet is stopped, otherwise DO will give us an error
+            if( VmState.STOPPED.equals(vm.getCurrentState() ) ) {
+                DigitalOceanModelFactory.performAction(getProvider(), new Start(), instanceId);
+            }
+        } catch( CloudException e ) {
+            logger.error(e.getMessage());
+            throw new CloudException(e);
         } finally {
             APITrace.end();
         }
@@ -139,32 +165,20 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public @Nullable VirtualMachine getVirtualMachine(@Nonnull String instanceId) throws InternalException, CloudException {
         APITrace.begin(getProvider(), "getVirtualMachine");
         try {
-            ProviderContext ctx = getProvider().getContext();
-
-            if( ctx == null ) {
-                throw new CloudException("No context was established for this request");
+            Droplet d = (Droplet) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLET, instanceId);
+            if (d != null) {
+                VirtualMachine server = toVirtualMachine(getContext(), d);
+                if (server != null && server.getProviderVirtualMachineId().equals(instanceId)) {
+                    return server;
+                }
             }
-                        
-            try {
-            	//TODO: We should implement this into the DigitalOceanHelper... maybe would be cleaner?
-            	Droplet d = (Droplet) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLET, instanceId);
-            	if (d != null) {
-                    VirtualMachine server = toVirtualMachine(ctx, d);
-                    if (server != null && server.getProviderVirtualMachineId().equals(instanceId)) {
-                        return server;
-                    }
-                }
-            } catch( CloudException e ) {
-                if( e.getHttpCode() == HttpServletResponse.SC_NOT_FOUND) {
-                    return null;
-                }
-                logger.error(e.getMessage());
-                throw new CloudException(e);
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage());
-                throw new CloudException(e);
-			}                        
             return null;
+        } catch( CloudException e ) {
+            if( e.getHttpCode() == HttpServletResponse.SC_NOT_FOUND) {
+                return null;
+            }
+            logger.error(e.getMessage());
+            throw new CloudException(e);
         } finally {
             APITrace.end();
         }
@@ -185,9 +199,13 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     @Override
     public boolean isSubscribed() throws InternalException, CloudException {
         try {
-            return (DigitalOceanModelFactory.checkAction(getProvider(), "sizes") == 200);
-        } catch (UnsupportedEncodingException e) {
-            throw new CloudException(e);
+            // TODO: HEAD requests seem to be broken now (21/05/2015), so replacing with a GET - temporarily
+            // https://www.digitalocean.com/community/questions/head-requests-return-404-error
+            DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
+            return true;
+//            return (DigitalOceanModelFactory.checkAction(getProvider(), "sizes") == 200);
+        } catch (CloudException e) {
+            return false;
         }
     }
 
@@ -202,32 +220,26 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         }
 
         List<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
-        try {
-            //Perform DigitalOcean query
-            Sizes availableSizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
+        //Perform DigitalOcean query
+        Sizes availableSizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
 
-            if (availableSizes != null) {
-                Set<Size> sizes = availableSizes.getSizes();
-                Iterator<Size> itr = sizes.iterator();
-                while(itr.hasNext()) {
-                    Size s = itr.next();
+        if (availableSizes != null) {
+            Set<Size> sizes = availableSizes.getSizes();
+            Iterator<Size> itr = sizes.iterator();
+            while(itr.hasNext()) {
+                Size s = itr.next();
 
-                    VirtualMachineProduct product = toProduct(s);
-                    if( product != null ) {
-                        list.add(product);
-                    }
+                VirtualMachineProduct product = toProduct(s);
+                if( product != null ) {
+                    list.add(product);
                 }
-                cache.put(getContext(), list);
             }
-            else {
-                logger.error("No product could be found, " + getProvider().getCloudName() + " provided no data for their sizesA PI.");
-                throw new CloudException("No product could be found.");
-            }
-
-        } catch (UnsupportedEncodingException e) {
-        	 logger.error(e.getMessage());
-             throw new CloudException(e);
-		}
+            cache.put(getContext(), list);
+        }
+        else {
+            logger.error("No product could be found, " + getProvider().getCloudName() + " provided no data for their sizes API.");
+            throw new CloudException("No product could be found.");
+        }
         return list;
     }
 
@@ -262,17 +274,8 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             		throw new InternalException("No region defined as part of launch options.");
             	}
             }
-
-            VirtualMachine server = null;
-            try {
-                Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
-                server = toVirtualMachine(getContext(), droplet);
-			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
-                throw new CloudException(e);
-			}
-
-            return server;
+            Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
+            return toVirtualMachine(getContext(), droplet);
         } finally {
             APITrace.end();
         }
@@ -282,29 +285,17 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public @Nonnull Iterable<ResourceStatus> listVirtualMachineStatus() throws InternalException, CloudException {
         APITrace.begin(getProvider(), "listVirtualMachineStatus");
         try {
-            ProviderContext ctx = getProvider().getContext();
-
-            if( ctx == null ) {
-                throw new CloudException("No context was established for this request");
-            }
-            
             List<ResourceStatus> list = new ArrayList<ResourceStatus>();
-            try {
-            	Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
-            	if (droplets != null) {
-	            	List<Droplet> dropletList = droplets.getDroplets();
-	            	for( Droplet d : dropletList ) {
-	            		ResourceStatus status = toStatus(d);
-	            		if( status != null ) {
-	                        list.add(status);
-	                    }
-	            	}
-            	}
-            } catch( Exception e ) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
+            Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
+            if (droplets != null) {
+                List<Droplet> dropletList = droplets.getDroplets();
+                for( Droplet d : dropletList ) {
+                    ResourceStatus status = toStatus(d);
+                    if( status != null ) {
+                        list.add(status);
+                    }
+                }
             }
-                        
             return list;
         } finally {
             APITrace.end();
@@ -320,30 +311,18 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public @Nonnull Iterable<VirtualMachine> listVirtualMachines(@Nullable VMFilterOptions options) throws InternalException, CloudException {
         APITrace.begin(getProvider(), "listVirtualMachines");
         try {
-            ProviderContext ctx = getProvider().getContext();
-
-            if( ctx == null ) {
-                throw new CloudException("No context was established for this request");
-            }
             List<VirtualMachine> list = new ArrayList<VirtualMachine>();
 
-            try {
-            	Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
-            	if (droplets != null) {
-	            	List<Droplet> dropletList = droplets.getDroplets();
-	            	for( Droplet d : dropletList ) {
-	            		VirtualMachine vm = toVirtualMachine(ctx, d);
-	                    if( options == null || options.matches(vm) ) {
-	                        list.add(vm);
-	                    }
-	                }
-            	}
-            	
-            } catch (UnsupportedEncodingException e) {
-            	logger.error(e.getMessage(), e);
-                throw new CloudException(e);
-			}   
-            
+            Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
+            if (droplets != null) {
+                List<Droplet> dropletList = droplets.getDroplets();
+                for( Droplet d : dropletList ) {
+                    VirtualMachine vm = toVirtualMachine(getContext(), d);
+                    if( options == null || options.matches(vm) ) {
+                        list.add(vm);
+                    }
+                }
+            }
             return list;
         } finally {
             APITrace.end();
@@ -351,25 +330,17 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     }
 
     @Override
-    public void pause(@Nonnull String vmId) throws InternalException, CloudException {
-        throw new OperationNotSupportedException("Pause/unpause not supported by the EC2 API");
-    }
-
-    @Override
     public void stop(@Nonnull String instanceId, boolean force) throws InternalException, CloudException {
         APITrace.begin(getProvider(), "stopVM");
         try {
+            waitForAllDropletEventsToComplete(instanceId, 5);
             VirtualMachine vm = getVirtualMachine(instanceId);
-
             if( vm == null ) {
                 throw new CloudException("No such instance: " + instanceId);
             }
-            
-            try {
+            // only stop if droplet is running, otherwise DO will give us an error
+            if( VmState.RUNNING.equals(vm.getCurrentState() ) ) {
                 DigitalOceanModelFactory.performAction(getProvider(), new Stop(), instanceId);
-            } catch (UnsupportedEncodingException e) {
-                 logger.error(e.getMessage());
-                 throw new CloudException(e);
             }
         } finally {
             APITrace.end();
@@ -380,60 +351,30 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public void reboot(@Nonnull String instanceId) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "rebootVM");
         try {
-        	VirtualMachine vm = getVirtualMachine(instanceId);
-
+            VirtualMachine vm = getVirtualMachine(instanceId);
             if( vm == null ) {
                 throw new CloudException("No such instance: " + instanceId);
             }
-            
-            try {
+            // only reboot if droplet is running, otherwise DO will give us an error
+            if( VmState.RUNNING.equals(vm.getCurrentState() ) ) {
                 DigitalOceanModelFactory.performAction(getProvider(), new Reboot(), instanceId);
-            } catch (UnsupportedEncodingException e) {
-            	 logger.error(e.getMessage());
-                 throw new CloudException(e);
-			}
+            }
         } finally {
             APITrace.end();
         }
-    }
-
-	@Override
-    public void resume(@Nonnull String vmId) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Suspend/resume not supported by the EC2 API");
-    }
-
-    @Override
-    public void suspend(@Nonnull String vmId) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Suspend/resume not supported by the EC2 API");
     }
 
     @Override
     public void terminate(@Nonnull String instanceId, @Nullable String explanation) throws InternalException, CloudException {
         APITrace.begin(getProvider(), "terminateVM");
         try {
-        	  try {
-        		  VirtualMachine vm = getVirtualMachine(instanceId);
-
-                  if( vm == null ) {
-                      throw new CloudException("No such instance found: " + instanceId);
-                  }
-                  
-              	  Destroy action = new Destroy();            	
-                  
-                  Action evt = DigitalOceanModelFactory.performAction(getProvider(), action, instanceId);
-                
-              } catch (UnsupportedEncodingException e) {
-            	  logger.error(e.getMessage());
-                  throw new CloudException(e);
-			}
+            if( getVirtualMachine(instanceId) == null ) {
+              throw new CloudException("No such instance found: " + instanceId);
+            }
+            DigitalOceanModelFactory.performAction(getProvider(), new Destroy(), instanceId);
         } finally {
             APITrace.end();
         }
-    }
-
-    @Override
-    public void unpause(@Nonnull String vmId) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Pause/unpause not supported by the EC2 API");
     }
 
     private @Nullable ResourceStatus toStatus(@Nullable Droplet instance) throws CloudException {
