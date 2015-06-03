@@ -23,6 +23,7 @@ package org.dasein.cloud.digitalocean.compute;
 import org.dasein.cloud.*;
 import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.util.NamingConstraints;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -140,5 +141,10 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     @Override
     public boolean imageCaptureDestroysVM() throws CloudException, InternalException{
         return false;
+    }
+
+    @Override
+    public NamingConstraints getImageNamingConstraints(){
+        return NamingConstraints.getAlphaNumeric(3, 128).constrainedBy('(', ')', '.', '-', '/', '_');
     }
 }
