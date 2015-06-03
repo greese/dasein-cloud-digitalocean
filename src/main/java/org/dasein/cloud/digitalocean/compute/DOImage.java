@@ -282,12 +282,6 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         catch( UnsupportedEncodingException e ) {
             throw new CloudException(e);
         }
-        catch( CloudException e ) {
-            if( e.getHttpCode() == 404 ) {
-                return null;
-            }
-            throw e;
-        }
         finally {
             APITrace.end();
         }

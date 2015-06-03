@@ -68,16 +68,16 @@ public class DigitalOceanModelFactory {
         }
 
         //TODO: Implement proper paging rather then oversized page size requests
+        String strUrl = endpoint + "?per_page=1000";
+
         if( logger.isTraceEnabled() ) {
             logger.trace("CALLING - " + method + " "  + endpoint);
         }
         HttpResponse response;
         String responseBody = null;
         try {
-            response = sendRequest(method, token, endpoint, timeout, action);
-            if( method != RESTMethod.DELETE ) {
-                responseBody = IOUtils.toString(response.getEntity().getContent());
-            }
+            response = sendRequest(method, token, strUrl, timeout, action);
+            responseBody = IOUtils.toString(response.getEntity().getContent());
             if( wire.isDebugEnabled() ) {
                 wire.debug(responseBody);
             }
