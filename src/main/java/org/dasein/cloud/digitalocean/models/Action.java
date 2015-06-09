@@ -22,19 +22,19 @@ package org.dasein.cloud.digitalocean.models;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
 public class Action implements DigitalOceanRestModel {
-	Long id;
+	String id;
 	String status;
 	String type;
 	String started_at;
 	String completed_at;
 	String resource_id;
 	String resource_type;
-	String region;
+	Region region;
 	
-	public Long getId() {
+	public String getId() {
 		return this.id;
 	}
-	public void setId(Long id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 	
@@ -67,24 +67,24 @@ public class Action implements DigitalOceanRestModel {
 	}
 	
 	
-	public String getResouurceId() {
+	public String getResourceId() {
 		return this.resource_id;
 	}
 	public void setResourceId(String s) {
 		this.resource_id = s;
 	}
 	
-	public String getResouurceType() {
+	public String getResourceType() {
 		return this.resource_type;
 	}
 	public void setResourceType(String s) {
 		this.resource_type = s;
 	}
 	
-	public String getRegion() {
+	public Region getRegion() {
 		return this.region;
 	}
-	public void setREgion(String r) {
+	public void setRegion(Region r) {
 		this.region = r;
 	}
 	

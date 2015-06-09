@@ -20,11 +20,29 @@
 package org.dasein.cloud.digitalocean.compute;
 
 import org.apache.log4j.Logger;
-import org.dasein.cloud.*;
-import org.dasein.cloud.compute.*;
+import org.dasein.cloud.AsynchronousTask;
+import org.dasein.cloud.CloudException;
+import org.dasein.cloud.InternalException;
+import org.dasein.cloud.OperationNotSupportedException;
+import org.dasein.cloud.ProviderContext;
+import org.dasein.cloud.ResourceStatus;
+import org.dasein.cloud.Tag;
+import org.dasein.cloud.compute.AbstractImageSupport;
+import org.dasein.cloud.compute.Architecture;
+import org.dasein.cloud.compute.ImageCapabilities;
+import org.dasein.cloud.compute.ImageClass;
+import org.dasein.cloud.compute.ImageCreateOptions;
+import org.dasein.cloud.compute.ImageFilterOptions;
+import org.dasein.cloud.compute.MachineImage;
+import org.dasein.cloud.compute.MachineImageState;
+import org.dasein.cloud.compute.Platform;
+import org.dasein.cloud.compute.VirtualMachine;
 import org.dasein.cloud.digitalocean.DigitalOcean;
+import org.dasein.cloud.digitalocean.models.Action;
+import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.Image;
 import org.dasein.cloud.digitalocean.models.Images;
+import org.dasein.cloud.digitalocean.models.actions.droplet.Snapshot;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.ServiceAction;
 import org.dasein.cloud.util.APITrace;
@@ -38,8 +56,14 @@ import org.dasein.util.uom.time.TimePeriod;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import static org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory.*;
 
 public class DOImage extends AbstractImageSupport<DigitalOcean> {
     static private final Logger logger = Logger.getLogger(DOImage.class);
@@ -72,26 +96,54 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
 
     @Override
     protected MachineImage capture(@Nonnull ImageCreateOptions options, @Nullable AsynchronousTask<MachineImage> task) throws CloudException, InternalException {
-        ProviderContext ctx = provider.getContext();
-        if (ctx == null) {
-            throw new CloudException("No context was set for this request");
-        }
-        return captureImage(ctx, options, task);
-    }
+        APITrace.begin(getProvider(), "Image.capture");
+        try {
+            // TODO: replace with HEAD request (checkDropletExists)
+            Droplet droplet = DigitalOceanModelFactory.getDropletByInstance(getProvider(), options.getVirtualMachineId());
+            if( droplet == null ) {
+                throw new InternalException("Virtual machine "+options.getVirtualMachineId()+" does not exist, unable to capture");
+            }
+            getProvider().getComputeServices().getVirtualMachineSupport().waitForAllDropletEventsToComplete(options.getVirtualMachineId(), 5);
+            List<String> previousSnapshotIds = Arrays.asList(droplet.getSnapshotIds());
+            Action action = performAction(getProvider(), new Snapshot(options.getName()), options.getVirtualMachineId());
+            while( !action.isComplete() ) {
+                try {
+                    Thread.sleep(2000L);
+                }
+                catch( InterruptedException e ) {
+                }
+                if( action.isError() ) {
+                    throw new CloudException(action.getStatus());
+                }
+                action = DigitalOceanModelFactory.getEventById(getProvider(), action.getId());
+            }
+            droplet = DigitalOceanModelFactory.getDropletByInstance(getProvider(), options.getVirtualMachineId());
+            // create a new list as Arrays.asList returns an unmodifiable list
+            List<String> newSnapshotIds = new ArrayList<String>();
+            newSnapshotIds.addAll(Arrays.asList(droplet.getSnapshotIds()));
+            newSnapshotIds.removeAll(previousSnapshotIds);
 
-    private
-    @Nonnull
-    MachineImage captureImage(@Nonnull ProviderContext ctx, @Nonnull ImageCreateOptions options, @Nullable AsynchronousTask<MachineImage> task) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image capture is not supported by "+getProvider().getCloudName());
+            // there may be more than one new snapshots so have to traverse to find the one
+            for( String snapshotId : newSnapshotIds ) {
+                Image image = (Image) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGE, snapshotId);
+                if( options.getName().equalsIgnoreCase(image.getName()) ) {
+                    // that's *probably* the one
+                    return toImage(image);
+                }
+            }
+            // not found any snapshot :-/
+            throw new CloudException("Unable to create or find the captured image for VM "+options.getVirtualMachineId());
+        }
+        finally {
+            APITrace.end();
+        }
     }
 
     @Override
-    public
-    @Nonnull
-    Iterable<MachineImage> searchImages(String accountNumber, String keyword, Platform platform, Architecture architecture, ImageClass... imageClasses) throws CloudException, InternalException {
+    public @Nonnull Iterable<MachineImage> searchImages(String accountNumber, String keyword, Platform platform, Architecture architecture, ImageClass... imageClasses) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "Image.searchImages");
         try {
-            ArrayList<MachineImage> results = new ArrayList<MachineImage>();
+            List<MachineImage> results = new ArrayList<MachineImage>();
             Collection<MachineImage> images = new ArrayList<MachineImage>();
             if (accountNumber == null) {
                 images.addAll((Collection<MachineImage>) searchPublicImages(ImageFilterOptions.getInstance()));
@@ -137,138 +189,124 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         }
     }
 
-    private
-    @Nonnull
-    Iterable<MachineImage> executeImageSearch(int pass, boolean forPublic, @Nonnull ImageFilterOptions options) throws CloudException, InternalException {
+    private @Nonnull Iterable<MachineImage> executeImageSearch(boolean publicImagesOnly, @Nonnull ImageFilterOptions options) throws CloudException, InternalException {
         APITrace.begin(provider, "Image.executeImageSearch");
         try {
-            final ProviderContext ctx = provider.getContext();
-
-            if (ctx == null) {
-                throw new CloudException("No context was set for this request");
-            }
-            final String regionId = ctx.getRegionId();
-            if (regionId == null) {
+            final String regionId = getContext().getRegionId();
+            if( regionId == null ) {
                 throw new CloudException("No region was set for this request");
             }
 
             Architecture architecture = options.getArchitecture();
-
-            if (architecture != null && !architecture.equals(Architecture.I32) && !architecture.equals(Architecture.I64)) {
-                if (!options.isMatchesAny()) {
+            if( architecture != null && !architecture.equals(Architecture.I32) && !architecture.equals(Architecture.I64) ) {
+                if( !options.isMatchesAny() ) {
                     return Collections.emptyList();
                 }
             }
 
-            Cache<MachineImage> cache = Cache.getInstance(provider, "images"+regionId, MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
-            Collection<MachineImage> imgList = (Collection<MachineImage>) cache.get(ctx);
-
-            final List<MachineImage> listAll = new ArrayList<MachineImage>();
-            if (imgList == null) {
-                try {
-                    Images images = (Images) DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES);
-                    if (images != null) {
-                        Set<org.dasein.cloud.digitalocean.models.Image> s = images.getImages();
-                        Iterator<org.dasein.cloud.digitalocean.models.Image> itr = s.iterator();
-                        while (itr.hasNext()) {
-                            org.dasein.cloud.digitalocean.models.Image d = itr.next();
-                            MachineImage machineImage = toImage(d);
-                            if( machineImage != null ) {
-                                listAll.add(machineImage);
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.error(e.getMessage());
-                    throw new CloudException(e);
-                }
-
-                cache.put(ctx, listAll);
-                imgList = listAll;
+            Cache<MachineImage> cache = Cache.getInstance(provider, "images" + ( publicImagesOnly ? "pub" : "prv" ) + "-" + regionId, MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
+            Collection<MachineImage> cachedImages = ( Collection<MachineImage> ) cache.get(getContext());
+            if( cachedImages != null ) {
+                return cachedImages;
             }
+            final List<MachineImage> results = new ArrayList<MachineImage>();
+            final org.dasein.cloud.digitalocean.models.rest.DigitalOcean cmd = publicImagesOnly ? org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES_PUBLIC : org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES;
 
-            // now build a filtered list of images
-            final List<MachineImage> res = new ArrayList<MachineImage>();
-
-            Iterator<MachineImage> itrMachine = imgList.iterator();
-            while (itrMachine.hasNext()) {
-                MachineImage image = itrMachine.next();
-                if (image != null) {
-                    if( options != null ) {
-                        if( options.matches(image) ) {
-                            res.add(image);
+            Images images = (Images) getModel(getProvider(), cmd);
+            int total = images.getTotal();
+            int page = 1;
+            while( true ) {
+                for( Image image : images.getImages() ) {
+                    MachineImage machineImage = toImage(image);
+                    if( machineImage != null && options.matches(machineImage) && publicImagesOnly == machineImage.isPublic() ) {
+                        // explode image to all regions, update total count
+                        int regions = image.getRegions().length;
+                        total += regions-1;
+                        for( String region : image.getRegions() ) {
+                            machineImage.setProviderRegionId(regionId);
+                            results.add(machineImage);
                         }
                     }
                     else {
-                        res.add(image);
+                        total--; // remove the defective image from the count
                     }
                 }
+                if( total <= 0 || total == results.size() ) {
+                    break;
+                }
+                images = (Images) getModel(getProvider(), cmd, ++page);
             }
-            return res;
+            // TODO: work out unique caches names based on filter parameters
+            // or else cache all, and filter after
+//            cache.put(getContext(), results);
+            return results;
+        }
+        catch (Throwable e) {
+            logger.error(e.getMessage());
+            throw new CloudException(e);
         } finally {
             APITrace.end();
         }
     }
 
-    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image instance) {
-        if (instance == null) {
+    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image image) throws InternalException {
+        if (image == null) {
             return null;
         }
-
-        ProviderContext ctx = getProvider().getContext();
-        String regionId = ctx.getRegionId();
-
-        if( !Arrays.asList(instance.getRegions()).contains(regionId) ) {
+        if( image.getRegions().length > 0 && !Arrays.asList(image.getRegions()).contains(getContext().getRegionId()) ) {
             return null;
         }
 
         MachineImageState mis = MachineImageState.ACTIVE;
-
+        if( image.getRegions().length == 0 ) {
+            mis = MachineImageState.DELETED;
+        }
         Architecture arch = Architecture.I64;
-        if (instance.getName().contains("x32")) {
+        if (image.getName().contains("x32")) {
             arch = Architecture.I32;
         }
 
-        Platform platform = Platform.UNKNOWN;
-        if (instance.getDistribution().compareToIgnoreCase("Ubuntu") == 0) {
-            platform = Platform.UBUNTU;
-        } else if (instance.getDistribution().compareToIgnoreCase("CentOS") == 0) {
-            platform = Platform.CENT_OS;
-        } else if (instance.getDistribution().compareToIgnoreCase("Fedora") == 0) {
-            platform = Platform.FEDORA_CORE;
+        Platform platform = Platform.guess(image.getDistribution());
+        if( platform.equals(Platform.UNKNOWN) ) {
+            platform = Platform.guess(image.getName());
         }
 
-        MachineImage image = MachineImage.getImageInstance(
-                ctx.getAccountNumber(),
-                regionId,
-                instance.getId(),
+        MachineImage machineImage = MachineImage.getInstance(
+                getContext().getAccountNumber(),
+                getContext().getRegionId(),
+                image.getId(),
                 ImageClass.MACHINE,
                 mis,
-                instance.getName(),
-                instance.getDistribution(),
+                image.getName(),
+                image.getDistribution(),
                 arch,
-                platform,
-                MachineImageFormat.RAW
+                platform
         );
         String software = null;
-        int pos = instance.getName().indexOf(" on ");
+        int pos = image.getName().indexOf(" on ");
         if (pos >= 1) {
-            software = instance.getName().substring(0, pos);
+            software = image.getName().substring(0, pos);
         }
         if (software != null) {
-            image.withSoftware(software);
+            machineImage.withSoftware(software);
         }
-        return image;
+        if( image.getPublic() ) {
+            machineImage.sharedWithPublic();
+        }
+        return machineImage;
     }
 
-    private ResourceStatus toStatus(org.dasein.cloud.digitalocean.models.Image instance) {
-        if (instance == null) {
+    private ResourceStatus toStatus(org.dasein.cloud.digitalocean.models.Image image) throws InternalException {
+        if (image == null) {
+            return null;
+        }
+        if( image.getRegions().length > 0 && !Arrays.asList(image.getRegions()).contains(getContext().getRegionId()) ) {
             return null;
         }
 
         MachineImageState state = MachineImageState.DELETED;
-        String vmId = String.valueOf(instance.getId());
-        if (instance.getRegions().length <= 0) {
+        String vmId = String.valueOf(image.getId());
+        if( image.getRegions().length > 0 ) {
             state = MachineImageState.ACTIVE;
         }
         return new ResourceStatus(vmId, state);
@@ -278,16 +316,14 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     public @Nullable MachineImage getImage(@Nonnull String providerImageId) throws CloudException, InternalException {
         APITrace.begin(provider, "Image.getImage");
         try {
-            ProviderContext ctx = provider.getContext();
-
-            if (ctx == null) {
-                throw new CloudException("No context was set for this request");
-            }
-            Image image = (Image) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGE, providerImageId);
+            Image image = (Image) getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGE, providerImageId);
             return toImage(image);
         }
-        catch( UnsupportedEncodingException e ) {
-            throw new CloudException(e);
+        catch( CloudException e ) {
+            if( e.getHttpCode() == 404 ) {
+                return null;
+            }
+            throw e;
         }
         finally {
             APITrace.end();
@@ -299,13 +335,10 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         APITrace.begin(provider, "Image.isImageSharedWithPublic");
         try {
             MachineImage image = getImage(machineImageId);
-
             if (image == null) {
                 return false;
             }
-            String p = (String) image.getTag("public");
-
-            return (p != null && p.equalsIgnoreCase("true"));
+            return image.isPublic();
         } finally {
             APITrace.end();
         }
@@ -313,33 +346,28 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
 
     @Override
     public boolean isSubscribed() throws CloudException, InternalException {
+        // TODO: send meta (HEAD) request to verify
         return true;
     }
 
     @Override
     public @Nonnull Iterable<ResourceStatus> listImageStatus(final @Nonnull ImageClass cls) throws CloudException, InternalException {
+        if( !cls.equals(ImageClass.MACHINE) ) {
+            return Collections.emptyList();
+        }
+
         provider.hold();
         PopulatorThread<ResourceStatus> populator = new PopulatorThread<ResourceStatus>(new JiteratorPopulator<ResourceStatus>() {
             @Override
             public void populate(@Nonnull Jiterator<ResourceStatus> iterator) throws Exception {
                 APITrace.begin(provider, "Image.listImageStatus");
                 try {
-                    try {
-                        TreeSet<String> ids = new TreeSet<String>();
-
-                        for (ResourceStatus status : executeStatusList(1, cls)) {
-                            ids.add(status.getProviderResourceId());
-                            iterator.push(status);
-                        }
-                        for (ResourceStatus status : executeStatusList(2, cls)) {
-                            if (!ids.contains(status.getProviderResourceId())) {
-                                iterator.push(status);
-                            }
-                        }
-                    } finally {
-                        provider.release();
+                    for (ResourceStatus status : executeStatusList(cls)) {
+                        iterator.push(status);
                     }
-                } finally {
+                }
+                finally {
+                    provider.release();
                     APITrace.end();
                 }
             }
@@ -350,56 +378,39 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
 
     }
 
-    private @Nonnull Iterable<ResourceStatus> executeStatusList(int pass, @Nonnull ImageClass cls) throws CloudException, InternalException {
+    private @Nonnull Iterable<ResourceStatus> executeStatusList(@Nonnull ImageClass cls) throws CloudException, InternalException {
         APITrace.begin(getProvider(), "Image.executeStatusList");
         try {
-            ProviderContext ctx = provider.getContext();
+            List<ResourceStatus> results = new ArrayList<ResourceStatus>();
 
-            if (ctx == null) {
-                throw new CloudException("No context was set for this request");
-            }
-
-            
-           /* Cache<ResourceStatus> cache = Cache.getInstance(provider, "images_resource", ResourceStatus.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
-            Collection<ResourceStatus> resList = (Collection<ResourceStatus>)cache.get(ctx);
-
-            if( resList != null ) {
-                return resList;
-            }*/
-
-            ArrayList<ResourceStatus> list = new ArrayList<ResourceStatus>();
-
-            try {
-
-                Images images = (Images) DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES);
-                if (images != null) {
-                    Set<org.dasein.cloud.digitalocean.models.Image> s = images.getImages();
-                    Iterator<org.dasein.cloud.digitalocean.models.Image> itr = s.iterator();
-                    while (itr.hasNext()) {
-                        org.dasein.cloud.digitalocean.models.Image d = itr.next();
-                        ResourceStatus status = toStatus(d);
-                        if (status != null) {
-                            list.add(status);
-                        }
+            Images images = (Images) getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES);
+            int total = images.getTotal();
+            int page = 1;
+            while( true ) {
+                for( Image image: images.getImages() ) {
+                    ResourceStatus status = toStatus(image);
+                    if (status != null ) {
+                        results.add(status);
+                    }
+                    else {
+                        total--;
                     }
                 }
-
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-                throw new CloudException(e);
+                if( total <= 0 || total == results.size() ) {
+                    break;
+                }
+                images = (Images) getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.IMAGES, ++page);
             }
 
-            return list;
-        } finally {
+            return results;
+        }
+        catch (Exception e) {
+            logger.error(e.getMessage());
+            throw new CloudException(e);
+        }
+        finally {
             APITrace.end();
         }
-    }
-
-    @Override
-    public
-    @Nonnull
-    Iterable<String> listShares(@Nonnull String forMachineImageId) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
     }
 
     @Override
@@ -410,30 +421,8 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     }
 
     @Override
-    public
-    @Nonnull
-    MachineImage registerImageBundle(@Nonnull ImageCreateOptions options) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image bundling not supported by " + getProvider().getCloudName());
-    }
-
-    @Override
     public void remove(@Nonnull String providerImageId, boolean checkState) throws CloudException, InternalException {
         throw new OperationNotSupportedException("Image removal not supported by " + getProvider().getCloudName());
-    }
-
-    @Override
-    public void removeAllImageShares(@Nonnull String providerImageId) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
-    }
-
-    @Override
-    public void removeImageShare(@Nonnull String providerImageId, @Nonnull String accountNumber) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
-    }
-
-    @Override
-    public void removePublicShare(@Nonnull String providerImageId) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image sharing not supported by " + getProvider().getCloudName());
     }
 
     @Override
@@ -453,22 +442,12 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
             public void populate(@Nonnull Jiterator<MachineImage> iterator) throws Exception {
                 APITrace.begin(getProvider(), "Image.listImages");
                 try {
-                    try {
-                        TreeSet<String> ids = new TreeSet<String>();
-
-                        for (MachineImage img : executeImageSearch(1, false, opts)) {
-                            ids.add(img.getProviderMachineImageId());
-                            iterator.push(img);
-                        }
-                        for (MachineImage img : executeImageSearch(2, false, opts)) {
-                            if (!ids.contains(img.getProviderMachineImageId())) {
-                                iterator.push(img);
-                            }
-                        }
-                    } finally {
-                        provider.release();
+                    for (MachineImage img : executeImageSearch(false, opts)) {
+                        iterator.push(img);
                     }
-                } finally {
+                }
+                finally {
+                    provider.release();
                     APITrace.end();
                 }
             }
@@ -489,10 +468,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
                 APITrace.begin(getProvider(), "searchPublicImages");
                 try {
                     try {
-                        for (MachineImage img : executeImageSearch(1, true, options)) {
-                            iterator.push(img);
-                        }
-                        for (MachineImage img : executeImageSearch(2, true, options)) {
+                        for (MachineImage img : executeImageSearch(true, options)) {
                             iterator.push(img);
                         }
                     } finally {
