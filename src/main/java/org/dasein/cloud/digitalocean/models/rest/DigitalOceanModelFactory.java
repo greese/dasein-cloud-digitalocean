@@ -371,8 +371,8 @@ public class DigitalOceanModelFactory {
      * Return HTTP status code for an action request sent via HEAD method
      * @param provider
      * @param actionUrl
-     * @return
-     * @throws UnsupportedEncodingException
+     * @return status code
+     * @throws InternalException
      * @throws CloudException
      */
     public static int checkAction(@Nonnull org.dasein.cloud.digitalocean.DigitalOcean provider, String actionUrl) throws CloudException, InternalException {
