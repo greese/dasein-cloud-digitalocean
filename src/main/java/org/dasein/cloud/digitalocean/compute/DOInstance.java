@@ -280,7 +280,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
             Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
             // returned droplet doesn't have enough information for our VirtualMachine to be complete, let's refresh
-            try { Thread.sleep(2000L); } catch( InterruptedException e ) {}
+            try { Thread.sleep(5000L); } catch( InterruptedException e ) {} // wait 5 sec for vm to get into a better shape
             return getVirtualMachine(droplet.getId());
         } finally {
             APITrace.end();
