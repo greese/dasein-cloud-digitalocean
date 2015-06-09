@@ -211,9 +211,12 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
 
     @Override
-    public @Nonnull Iterable<VirtualMachineProduct> listProducts(VirtualMachineProductFilterOptions options,
-                                                                 Architecture architecture) throws InternalException, CloudException {
-        Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + architecture.name(), VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
+    public @Nonnull Iterable<VirtualMachineProduct> listProducts(VirtualMachineProductFilterOptions options, Architecture architecture) throws InternalException, CloudException {
+        String cacheName = "ALL";
+        if( architecture != null ) {
+            cacheName = architecture.name();
+        }
+        Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + cacheName, VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
         Iterable<VirtualMachineProduct> products = cache.get(getContext());
         if( products != null && products.iterator().hasNext() ) {
             return products;
@@ -274,8 +277,12 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             		throw new InternalException("No region defined as part of launch options.");
             	}
             }
+
             Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
-            return toVirtualMachine(getContext(), droplet);
+            // returned droplet doesn't have enough information for our VirtualMachine to be complete, let's refresh
+            try { Thread.sleep(2000L); } catch( InterruptedException e ) {}
+            VirtualMachine vm = getVirtualMachine(droplet.getId());
+            return vm;
         } finally {
             APITrace.end();
         }
@@ -396,16 +403,22 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         server.setProviderOwnerId(ctx.getAccountNumber());
         server.setCurrentState(instance.getStatus());
         server.setName(instance.getName());
-        if( instance.getSize() != null ) {
+        if( instance.getSize() != null && instance.getSize().getSlug() != null ) {
             server.setProductId(instance.getSize().getSlug());
         }
         else {
             server.setProductId(instance.getSizeSlug());
         }
-        server.setDescription(server.getName() + " (" + instance.getImage().getName() + ")");
+        String description = server.getName();
+        if( instance.getImage().getName() != null ) {
+            description += " (" + instance.getImage().getName() + ")";
+        }
+        server.setDescription(description);
         server.setProviderVirtualMachineId(instance.getId());
         server.setProviderMachineImageId(instance.getImage().getId());
 
+        server.setProviderRegionId(ctx.getRegionId());
+        server.setProviderDataCenterId(ctx.getRegionId());
         if( instance.getRegion() != null ) {
             server.setProviderRegionId(instance.getRegion().getSlug());
             server.setProviderDataCenterId(instance.getRegion().getSlug());
@@ -421,6 +434,12 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             server.setArchitecture(Architecture.I64);
         }
         server.setPlatform(Platform.guess(instance.getName()));
+        if( Platform.UNKNOWN.equals(server.getPlatform()) ) {
+            server.setPlatform(Platform.guess(instance.getImage().getName()));
+        }
+        if( Platform.UNKNOWN.equals(server.getPlatform()) ) {
+            server.setPlatform(Platform.guess(instance.getImage().getDistribution()));
+        }
 
         if( instance.getNetworks() != null ) {
             List<RawAddress> rawAddresses = new ArrayList<RawAddress>();
