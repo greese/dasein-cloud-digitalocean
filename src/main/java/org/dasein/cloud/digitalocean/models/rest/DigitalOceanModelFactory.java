@@ -361,8 +361,8 @@ public class DigitalOceanModelFactory {
      * Return HTTP status code for an action request sent via HEAD method
      * @param provider
      * @param actionUrl
-     * @return
-     * @throws UnsupportedEncodingException
+     * @return status code
+     * @throws InternalException
      * @throws CloudException
      */
     public static int checkAction(CloudProvider provider, String actionUrl) throws UnsupportedEncodingException, CloudException {
