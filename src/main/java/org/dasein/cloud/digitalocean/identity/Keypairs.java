@@ -148,39 +148,32 @@ public class Keypairs implements ShellKeySupport {
             
             
             try {
-            	Keys kSet  = (Keys) DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
+            	Key key  = (Key) DigitalOceanModelFactory.getModelById(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEY, providerId);
             	
-            	if (kSet == null) {
-            		return null;            		
-            	}
-            	Iterator<Key> itr = kSet.getKey().iterator();
-            	while(itr.hasNext()) {
-            		Key k = itr.next();            	
-	            	if( k != null && k.getName() != null & k.getName().equals(providerId) && k.getFingerprint() != null ) {
-	                    SSHKeypair kp = new SSHKeypair();
-	
-	                    kp.setFingerprint(k.getFingerprint());
-	                    kp.setName(k.getName());
-	                    kp.setPrivateKey(null);
-	                    kp.setPublicKey(k.getPublicKey());
-	                    kp.setProviderKeypairId(k.getId());
-	                    kp.setProviderOwnerId(ctx.getAccountNumber());
-	                    //all regions
-	                    //kp.setProviderRegionId(regionId);
-	                    return kp;
-	                }
-            	}
-            	
-            	//Not found
+                if( key != null && key.getId() != null & providerId.equals(key.getId()) && key.getFingerprint() != null ) {
+                    SSHKeypair kp = new SSHKeypair();
+
+                    kp.setFingerprint(key.getFingerprint());
+                    kp.setName(key.getName());
+                    kp.setPrivateKey(null);
+                    kp.setPublicKey(key.getPublicKey());
+                    kp.setProviderKeypairId(key.getId());
+                    kp.setProviderOwnerId(ctx.getAccountNumber());
+                    kp.setProviderRegionId(ctx.getRegionId());
+                    return kp;
+                }
+            	// invalid record
             	return null;
             } catch( CloudException e ) {
+                if( e.getHttpCode() == 404 ) {
+                    return null; // not found
+                }
                 logger.error(e.getMessage());
                 throw new CloudException(e);
             } catch (UnsupportedEncodingException e) {
             	logger.error(e.getMessage());
                 throw new CloudException(e);
 			}          
-                          
         }
         finally {
             APITrace.end();
@@ -232,10 +225,6 @@ public class Keypairs implements ShellKeySupport {
             //Its available for all regions
             ///key.setProviderRegionId(regionId);
             return key;
-                
-        } catch (UnsupportedEncodingException e) {
-            logger.error(e.getMessage());
-            throw new CloudException(e);
         }
         finally {
             APITrace.end();

@@ -72,12 +72,14 @@ public class DigitalOceanModelFactory {
             logger.trace("CALLING - " + method + " "  + endpoint);
         }
         HttpResponse response;
-        String responseBody;
+        String responseBody = null;
         try {
             response = sendRequest(method, token, endpoint, timeout, action);
-            responseBody = IOUtils.toString(response.getEntity().getContent());
-            if( wire.isDebugEnabled() ) {
-                wire.debug(responseBody);
+            if( response.getEntity() != null ) {
+                responseBody = IOUtils.toString(response.getEntity().getContent());
+                if( wire.isDebugEnabled() ) {
+                    wire.debug(responseBody);
+                }
             }
             if (logger.isTraceEnabled()) {
                 logger.trace("RECEIVED - " + "[" + response.getStatusLine().getStatusCode() + "] " + responseBody);
@@ -333,7 +335,7 @@ public class DigitalOceanModelFactory {
 		}
 	}
 	
-	public static DigitalOceanRestModel performAction(CloudProvider provider, DigitalOceanAction doa, IDigitalOcean returnObject) throws UnsupportedEncodingException, CloudException {
+	public static DigitalOceanRestModel performAction(CloudProvider provider, DigitalOceanAction doa, IDigitalOcean returnObject) throws CloudException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + ", " + returnObject + ")");
@@ -359,11 +361,11 @@ public class DigitalOceanModelFactory {
      * Return HTTP status code for an action request sent via HEAD method
      * @param provider
      * @param actionUrl
-     * @return
-     * @throws UnsupportedEncodingException
+     * @return status code
+     * @throws InternalException
      * @throws CloudException
      */
-    public static int checkAction(CloudProvider provider, String actionUrl) throws UnsupportedEncodingException, CloudException {
+    public static int checkAction(CloudProvider provider, String actionUrl) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".checkAction(" + provider + ")");
         }
@@ -379,7 +381,7 @@ public class DigitalOceanModelFactory {
         }
     }
 
-    public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, HashMap<String, Object> extraParameters) throws UnsupportedEncodingException, CloudException {
+    public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, HashMap<String, Object> extraParameters) throws CloudException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
@@ -447,7 +449,7 @@ public class DigitalOceanModelFactory {
 			}
 			action.setSshKeyIds(ssh_key_ids);
 			
-			return (Droplet)performAction(provider, action, DigitalOcean.DROPLET);
+			return (Droplet) performAction(provider, action, DigitalOcean.DROPLET);
 		} finally {
 				
 			if( logger.isTraceEnabled() ) {
