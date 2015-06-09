@@ -20,24 +20,39 @@
 package org.dasein.cloud.digitalocean.models.rest;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Consts;
 import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.GzipDecompressingEntity;
 import org.apache.http.client.methods.*;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.dasein.cloud.CloudErrorType;
 import org.dasein.cloud.CloudException;
 import org.dasein.cloud.CloudProvider;
 import org.dasein.cloud.InternalException;
+import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.digitalocean.models.Action;
+import org.dasein.cloud.digitalocean.models.Actions;
 import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.IDigitalOcean;
 import org.dasein.cloud.digitalocean.models.actions.droplet.Create;
@@ -45,12 +60,15 @@ import org.dasein.cloud.identity.SSHKeypair;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 public class DigitalOceanModelFactory {
 
@@ -58,28 +76,24 @@ public class DigitalOceanModelFactory {
 	static private final Logger logger = org.dasein.cloud.digitalocean.DigitalOcean.getLogger(DigitalOceanModelFactory.class);
 
     //for get method
-    private static String performHttpRequest(RESTMethod method, String token, String endpoint, int timeout) throws CloudException {
-    	return performHttpRequest( method, token, endpoint, timeout, null);
+    private static String performHttpRequest(org.dasein.cloud.digitalocean.DigitalOcean provider, RESTMethod method, String token, String endpoint) throws CloudException, InternalException {
+    	return performHttpRequest(provider, method, token, endpoint, null);
     }
     
-	private static String performHttpRequest(RESTMethod method, String token, String endpoint, int timeout, DigitalOceanAction action) throws CloudException {
+	private static String performHttpRequest(org.dasein.cloud.digitalocean.DigitalOcean provider, RESTMethod method, String token, String endpoint, DigitalOceanAction action) throws CloudException, InternalException {
 		if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout+ ")");
-        }
-
-        //TODO: Implement proper paging rather then oversized page size requests
-        String strUrl = endpoint + "?per_page=1000";
-
-        if( logger.isTraceEnabled() ) {
+            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + ")");
             logger.trace("CALLING - " + method + " "  + endpoint);
         }
         HttpResponse response;
-        String responseBody;
+        String responseBody = null;
         try {
-            response = sendRequest(method, token, strUrl, timeout, action);
-            responseBody = IOUtils.toString(response.getEntity().getContent());
-            if( wire.isDebugEnabled() ) {
-                wire.debug(responseBody);
+            response = sendRequest(provider, method, token, endpoint, action);
+            if( response.getEntity() != null ) {
+                responseBody = IOUtils.toString(response.getEntity().getContent());
+                if( wire.isDebugEnabled() ) {
+                    wire.debug(responseBody);
+                }
             }
             if (logger.isTraceEnabled()) {
                 logger.trace("RECEIVED - " + "[" + response.getStatusLine().getStatusCode() + "] " + responseBody);
@@ -104,7 +118,7 @@ public class DigitalOceanModelFactory {
             throw new CloudException(e);
         } finally {
             if (logger.isTraceEnabled()) {
-                logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + "," + timeout + ")");
+                logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performHttpRequest(" + method + "," + token + "," + endpoint + ")");
             }
             if (wire.isDebugEnabled()) {
                 wire.debug("--------------------------------------------------------------------------------------");
@@ -118,7 +132,7 @@ public class DigitalOceanModelFactory {
      * @return Http response
      * @throws CloudException
      */
-    private static HttpResponse sendRequest(RESTMethod method, String token, String strUrl, int timeout, DigitalOceanAction action) throws CloudException {
+    private static HttpResponse sendRequest(org.dasein.cloud.digitalocean.DigitalOcean provider, RESTMethod method, String token, String strUrl, DigitalOceanAction action) throws CloudException, InternalException {
         HttpRequestBase req = null;
         if (method == RESTMethod.GET) {
             req = new HttpGet(strUrl);
@@ -133,13 +147,9 @@ public class DigitalOceanModelFactory {
         }
 
         try {
-            HttpParams httpParams = new BasicHttpParams();
             req.setHeader("Authorization", "Bearer " + token);
             req.setHeader("Accept", "application/json");
             req.setHeader("Content-Type", "application/json;charset=UTF-8");
-
-            HttpConnectionParams.setConnectionTimeout(httpParams, timeout);
-            HttpConnectionParams.setSoTimeout(httpParams, timeout);
 
             StringEntity requestEntity = null;
             if (req instanceof HttpEntityEnclosingRequestBase && action != null) {
@@ -152,7 +162,7 @@ public class DigitalOceanModelFactory {
                 }
             }
 
-            HttpClient httpClient = new DefaultHttpClient(httpParams);
+            HttpClient httpClient = provider.getClient();
 
             if (wire.isDebugEnabled()) {
                 wire.debug("");
@@ -197,7 +207,7 @@ public class DigitalOceanModelFactory {
                 }
             }
             if (method == RESTMethod.DELETE && (response.getStatusLine().getStatusCode() != 204)) {
-                //Error occured
+                //Error occurred
                 throw new CloudException("Delete method returned unexpected code, despite retrying.");
             }
             return response;
@@ -218,17 +228,31 @@ public class DigitalOceanModelFactory {
         }
     }
 
-	public static DigitalOceanRestModel getModel(CloudProvider provider, DigitalOcean model) throws UnsupportedEncodingException, CloudException {
+    public static DigitalOceanRestModel getModel(org.dasein.cloud.digitalocean.DigitalOcean provider, DigitalOcean model) throws CloudException, InternalException {
+        return getModel(provider, model, 0);
+    }
+
+	public static DigitalOceanRestModel getModel(org.dasein.cloud.digitalocean.DigitalOcean provider, DigitalOcean model, int page) throws CloudException, InternalException {
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".getModel(" + provider + "," +  model + ")");
         }
 			
-		String token = (String)provider.getContext().getConfigurationValue("token");
+		String token = (String) provider.getContext().getConfigurationValue("token");
     	
-		try {		
-			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model), 15000);
-			
-			JSONObject jso = new JSONObject(s);
+		try {
+            StringBuilder urlBuilder = new StringBuilder();
+            urlBuilder.append(getApiUrl(provider)).append(getEndpoint(model));
+            if( page > 0 ) {
+                if( urlBuilder.indexOf("?") > 0 ) {
+                    urlBuilder.append('&');
+                }
+                else {
+                    urlBuilder.append('?');
+                }
+                urlBuilder.append("page=").append(page);
+            }
+			String responseText = performHttpRequest(provider, RESTMethod.GET, token, urlBuilder.toString());
+			JSONObject jso = new JSONObject(responseText);
 								
 			return model.fromJson(jso);
         } catch (JSONException e) {
@@ -240,15 +264,15 @@ public class DigitalOceanModelFactory {
 		}
 	}
 	
-	public static DigitalOceanRestModel getModelById(CloudProvider provider, DigitalOcean model, String id) throws UnsupportedEncodingException, CloudException {
+	public static DigitalOceanRestModel getModelById(org.dasein.cloud.digitalocean.DigitalOcean provider, DigitalOcean model, String id) throws CloudException, InternalException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".getModel(" + provider + "," +  model + "," + id + ")");
         }
 
-		String token = (String)provider.getContext().getConfigurationValue("token");
+		String token = (String) provider.getContext().getConfigurationValue("token");
 		try {
-			String s = performHttpRequest(RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model, id), 15000);
+			String s = performHttpRequest(provider, RESTMethod.GET, token,  getApiUrl(provider) + getEndpoint(model, id));
 			JSONObject jso = new JSONObject(s);
 			return model.fromJson(jso);				
 		} catch (JSONException e) {
@@ -270,7 +294,7 @@ public class DigitalOceanModelFactory {
 		return String.format(d.toString(), id);				
 	}
 
-	private static String getApiUrl(CloudProvider provider) {
+	private static String getApiUrl(org.dasein.cloud.digitalocean.DigitalOcean provider) {
 		String url = provider.getContext().getCloud().getEndpoint();
 		if (url == null) {
 			//Return the default digitalocean endpoint.
@@ -287,7 +311,7 @@ public class DigitalOceanModelFactory {
 		return url;
 	}
 
-	public static Action performAction(CloudProvider provider, DigitalOceanAction doa, String id) throws UnsupportedEncodingException, CloudException {
+	public static Action performAction(org.dasein.cloud.digitalocean.DigitalOcean provider, DigitalOceanAction doa, String id) throws CloudException, InternalException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".destroyDroplet(" + provider + "," + id + ")");
@@ -295,7 +319,7 @@ public class DigitalOceanModelFactory {
 
 		String token = (String) provider.getContext().getConfigurationValue("token");
 
-		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa, id), 15000, doa);
+		String s = performHttpRequest(provider, doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa, id), doa);
 		
 		try {
 			//Delete have no output...
@@ -321,15 +345,15 @@ public class DigitalOceanModelFactory {
 		}
 	}
 	
-	public static DigitalOceanRestModel performAction(CloudProvider provider, DigitalOceanAction doa, IDigitalOcean returnObject) throws UnsupportedEncodingException, CloudException {
+	public static DigitalOceanRestModel performAction(@Nonnull org.dasein.cloud.digitalocean.DigitalOcean provider, DigitalOceanAction doa, IDigitalOcean returnObject) throws CloudException, InternalException {
 
 		if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + ", " + returnObject + ")");
+            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider.getCloudName() + ", " + returnObject + ")");
 		}
 
-		String token = (String)provider.getContext().getConfigurationValue("token");
+		String token = (String) provider.getContext().getConfigurationValue("token");
         
-		String s = performHttpRequest(doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa), 15000, doa);
+		String s = performHttpRequest(provider, doa.getRestMethod(), token,  getApiUrl(provider) + getEndpoint(doa), doa);
 		
 		try {			
 			JSONObject jso = new JSONObject(s);
@@ -338,7 +362,7 @@ public class DigitalOceanModelFactory {
             throw new CloudException(e);
         } finally {
 			if( logger.isTraceEnabled() ) {
-	            logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + "," + returnObject + ")");
+	            logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider.getCloudName() + "," + returnObject + ")");
 	        }
 		}
 	}
@@ -351,60 +375,33 @@ public class DigitalOceanModelFactory {
      * @throws UnsupportedEncodingException
      * @throws CloudException
      */
-    public static int checkAction(CloudProvider provider, String actionUrl) throws UnsupportedEncodingException, CloudException {
+    public static int checkAction(@Nonnull org.dasein.cloud.digitalocean.DigitalOcean provider, String actionUrl) throws CloudException, InternalException {
         if( logger.isTraceEnabled() ) {
-            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".checkAction(" + provider + ")");
+            logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".checkAction(" + provider.getCloudName() + ")");
         }
 
         String token = (String) provider.getContext().getConfigurationValue("token");
 
         try {
-            return sendRequest(RESTMethod.GET, token,  getApiUrl(provider) + "v2/" + actionUrl, 15000, null).getStatusLine().getStatusCode();
+            return sendRequest(provider, RESTMethod.HEAD, token,  getApiUrl(provider) + "v2/" + actionUrl, null).getStatusLine().getStatusCode();
         } finally {
             if( logger.isTraceEnabled() ) {
-                logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".checkAction(" + provider + ")");
+                logger.trace("EXIT - " + DigitalOceanModelFactory.class.getName() + ".checkAction(" + provider.getCloudName() + ")");
             }
         }
     }
 
-    public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, HashMap<String, Object> extraParameters) throws UnsupportedEncodingException, CloudException {
+    public static Droplet createInstance(org.dasein.cloud.digitalocean.DigitalOcean provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, Map<String, Object> extraParameters) throws CloudException, InternalException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
 		}
 
-        HashMap<String, SSHKeypair> keypairByName = new HashMap<String, SSHKeypair>();
-        HashMap<String, SSHKeypair> keypairById = new HashMap<String, SSHKeypair>();
-        try {
-            Iterator<SSHKeypair> i = provider.getIdentityServices().getShellKeySupport().list().iterator();
-            while (i.hasNext()) {
-                SSHKeypair next = i.next();
-                keypairByName.put(next.getName(), next);
-                keypairById.put(next.getProviderKeypairId(), next);
-            }
-        } catch (InternalException e) {
-            throw new CloudException ("Could not retrieve account ssh key list for " + provider.getContext().getAccountNumber(), e);
-        }
-
         try {
 			Create action = new Create(dropletName, sizeId, theImageId, regionId);
-			List<Long> ssh_key_ids = new ArrayList<Long>();
+			List<String> ssh_key_ids = new ArrayList<String>();
 			//Extra parameter is not part of DaseinCloud.... as its cloud specific
 			if (extraParameters != null) {
-				if (extraParameters.containsKey("ssh_key_ids")) {
-					try {					
-						ssh_key_ids = (List<Long>) extraParameters.get("ssh_key_ids");
-					} catch (Exception ee) {
-						throw new CloudException("Parameter 'ssh_key_ids' must be of type ArrayList<Long>");
-					}
-				}
-				
-							
-				if (extraParameters.containsKey("ssh_key_id")) {
-					Long sshKeyId = Long.valueOf("" + extraParameters.get("ssh_key_ids"));
-					ssh_key_ids.add(sshKeyId);									
-				}
-				
 				if (extraParameters.containsKey("backup_enabled")) {
 					try {
 						action.setBackups((Boolean)extraParameters.get("backup_enabled"));
@@ -421,21 +418,12 @@ public class DigitalOceanModelFactory {
 				}
 			}
 		
-			if(bootstrapKey!=null) {
-				if (!bootstrapKey.isEmpty()) {
-                    String id = null;
-                    if (keypairById.containsKey(bootstrapKey))
-                        id = keypairById.get(bootstrapKey).getProviderKeypairId();
-                    else if (keypairByName.containsKey(bootstrapKey))
-                        id = keypairByName.get(bootstrapKey).getProviderKeypairId();
-                    else
-                        throw new CloudException("Received a bootstrap key but it doesn't seem to match an existing key pair");
-					ssh_key_ids.add(Long.valueOf(id)); // FIXME(maria): Long??? it's a string
-				}
+			if( bootstrapKey != null ) {
+                ssh_key_ids.add(bootstrapKey);
 			}
 			action.setSshKeyIds(ssh_key_ids);
 			
-			return (Droplet)performAction(provider, action, DigitalOcean.DROPLET);
+			return (Droplet) performAction(provider, action, DigitalOcean.DROPLET);
 		} finally {
 				
 			if( logger.isTraceEnabled() ) {
@@ -444,14 +432,16 @@ public class DigitalOceanModelFactory {
 		}
 	}
 
-	public static Droplet getDropletByInstance(CloudProvider provider, String dropletInstanceId) throws UnsupportedEncodingException, CloudException {
-		// TODO Auto-generated method stub
-		return (Droplet)getModelById(provider, DigitalOcean.DROPLET, dropletInstanceId);		
+	public static Droplet getDropletByInstance(org.dasein.cloud.digitalocean.DigitalOcean provider, String dropletInstanceId) throws CloudException, InternalException {
+		return (Droplet) getModelById(provider, DigitalOcean.DROPLET, dropletInstanceId);
 	}
 
-	public static Action getEventById(CloudProvider provider, String id) throws UnsupportedEncodingException, CloudException {		 
-		return (Action)getModelById(provider, DigitalOcean.ACTION, id);				
+	public static Action getEventById(org.dasein.cloud.digitalocean.DigitalOcean provider, String id) throws CloudException, InternalException {
+		return (Action) getModelById(provider, DigitalOcean.ACTION, id);
 	}
 
+    public static Actions getDropletEvents(org.dasein.cloud.digitalocean.DigitalOcean provider, String dropletId) throws CloudException, InternalException {
+        return (Actions) getModelById(provider, DigitalOcean.DROPLET_ACTIONS, dropletId);
+    }
 
 }
