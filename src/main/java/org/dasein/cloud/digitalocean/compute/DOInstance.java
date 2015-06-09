@@ -211,10 +211,11 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
 
     @Override
-    public @Nonnull Iterable<VirtualMachineProduct> listProducts(VirtualMachineProductFilterOptions options, Architecture architecture) throws InternalException, CloudException {
+    public @Nonnull Iterable<VirtualMachineProduct> listProducts(String machineImageId, VirtualMachineProductFilterOptions options) throws InternalException, CloudException {
         String cacheName = "ALL";
-        if( architecture != null ) {
-            cacheName = architecture.name();
+        MachineImage image = getProvider().getComputeServices().getImageSupport().getImage(machineImageId);
+        if( image != null ) {
+            cacheName = image.getArchitecture().name();
         }
         Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + cacheName, VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
         Iterable<VirtualMachineProduct> products = cache.get(getContext());
