@@ -265,8 +265,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
             // returned droplet doesn't have enough information for our VirtualMachine to be complete, let's refresh
             try { Thread.sleep(2000L); } catch( InterruptedException e ) {}
-            VirtualMachine vm = getVirtualMachine(droplet.getId());
-            return vm;
+            return getVirtualMachine(droplet.getId());
         } finally {
             APITrace.end();
         }
@@ -488,18 +487,32 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         }
 
         if( instance.getNetworks() != null ) {
-            List<RawAddress> rawAddresses = new ArrayList<RawAddress>();
+            List<RawAddress> privateAddresses = new ArrayList<RawAddress>();
+            List<RawAddress> publicAddresses = new ArrayList<RawAddress>();
             if( instance.getNetworks().getV4() != null ) {
                 for (Network network : instance.getNetworks().getV4()) {
-                    rawAddresses.add(new RawAddress(network.getIpAddress(), IPVersion.IPV4));
+                    RawAddress address = new RawAddress(network.getIpAddress(), IPVersion.IPV4);
+                    if( "public".equalsIgnoreCase(network.getType()) ) {
+                        publicAddresses.add(address);
+                    }
+                    else {
+                        privateAddresses.add(address);
+                    }
                 }
             }
             if( instance.getNetworks().getV6() != null ) {
                 for (Network network : instance.getNetworks().getV6()) {
-                    rawAddresses.add(new RawAddress(network.getIpAddress(), IPVersion.IPV6));
+                    RawAddress address = new RawAddress(network.getIpAddress(), IPVersion.IPV6);
+                    if( "public".equalsIgnoreCase(network.getType()) ) {
+                        publicAddresses.add(address);
+                    }
+                    else {
+                        privateAddresses.add(address);
+                    }
                 }
             }
-            server.setPrivateAddresses(rawAddresses.toArray(new RawAddress[rawAddresses.size()]));
+            server.setPrivateAddresses(privateAddresses.toArray(new RawAddress[privateAddresses.size()]));
+            server.setPublicAddresses(publicAddresses.toArray(new RawAddress[publicAddresses.size()]));
         }
         return server;
     }
