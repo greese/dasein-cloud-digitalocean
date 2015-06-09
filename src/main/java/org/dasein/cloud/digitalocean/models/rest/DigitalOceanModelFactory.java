@@ -335,7 +335,7 @@ public class DigitalOceanModelFactory {
 		}
 	}
 	
-	public static DigitalOceanRestModel performAction(CloudProvider provider, DigitalOceanAction doa, IDigitalOcean returnObject) throws UnsupportedEncodingException, CloudException {
+	public static DigitalOceanRestModel performAction(CloudProvider provider, DigitalOceanAction doa, IDigitalOcean returnObject) throws CloudException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".performAction(" + provider + ", " + returnObject + ")");
@@ -365,7 +365,7 @@ public class DigitalOceanModelFactory {
      * @throws InternalException
      * @throws CloudException
      */
-    public static int checkAction(CloudProvider provider, String actionUrl) throws UnsupportedEncodingException, CloudException {
+    public static int checkAction(CloudProvider provider, String actionUrl) throws InternalException, CloudException {
         if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".checkAction(" + provider + ")");
         }
@@ -381,7 +381,7 @@ public class DigitalOceanModelFactory {
         }
     }
 
-    public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, HashMap<String, Object> extraParameters) throws UnsupportedEncodingException, CloudException {
+    public static Droplet createInstance(CloudProvider provider, String dropletName, String sizeId, String theImageId, String regionId, String bootstrapKey, HashMap<String, Object> extraParameters) throws CloudException {
 
 		if( logger.isTraceEnabled() ) {
             logger.trace("ENTER - " + DigitalOceanModelFactory.class.getName() + ".createInstance(" + dropletName + "," + sizeId + "," + theImageId + "," + regionId + "," + extraParameters + ")");
@@ -449,7 +449,7 @@ public class DigitalOceanModelFactory {
 			}
 			action.setSshKeyIds(ssh_key_ids);
 			
-			return (Droplet)performAction(provider, action, DigitalOcean.DROPLET);
+			return (Droplet) performAction(provider, action, DigitalOcean.DROPLET);
 		} finally {
 				
 			if( logger.isTraceEnabled() ) {

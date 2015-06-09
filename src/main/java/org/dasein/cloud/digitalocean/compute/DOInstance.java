@@ -184,11 +184,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
 
     @Override
     public boolean isSubscribed() throws InternalException, CloudException {
-        try {
-            return (DigitalOceanModelFactory.checkAction(getProvider(), "sizes") == 200);
-        } catch (UnsupportedEncodingException e) {
-            throw new CloudException(e);
-        }
+        return (DigitalOceanModelFactory.checkAction(getProvider(), "sizes") == 200);
     }
 
 

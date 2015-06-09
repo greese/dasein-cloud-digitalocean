@@ -225,10 +225,6 @@ public class Keypairs implements ShellKeySupport {
             //Its available for all regions
             ///key.setProviderRegionId(regionId);
             return key;
-                
-        } catch (UnsupportedEncodingException e) {
-            logger.error(e.getMessage());
-            throw new CloudException(e);
         }
         finally {
             APITrace.end();
