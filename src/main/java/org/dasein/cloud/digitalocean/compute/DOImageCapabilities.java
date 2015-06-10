@@ -29,6 +29,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -52,7 +53,7 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
 
     @Override
     public boolean canImage(@Nonnull VmState vmState) throws CloudException, InternalException {
-        return false;
+        return VmState.STOPPED.equals(vmState);
     }
 
     @Nonnull
@@ -70,13 +71,13 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     @Nullable
     @Override
     public VisibleScope getImageVisibleScope() {
-        return null;
+        return VisibleScope.ACCOUNT_REGION;
     }
 
     @Nonnull
     @Override
     public Requirement identifyLocalBundlingRequirement() throws CloudException, InternalException {
-        return Requirement.REQUIRED;
+        return Requirement.NONE;
     }
 
     @Nonnull
@@ -97,10 +98,11 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     	return Arrays.asList(ImageClass.MACHINE);
     }
 
-    @Nonnull
-    @Override
+    private final transient static List<MachineImageType> imageTypes = Arrays.asList(MachineImageType.VOLUME);
+
+    @Nonnull @Override
     public Iterable<MachineImageType> listSupportedImageTypes() throws CloudException, InternalException {
-    	return Arrays.asList(MachineImageType.VOLUME);
+        return imageTypes;
     }
 
     @Override
@@ -110,7 +112,7 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
 
     @Override
     public boolean supportsImageCapture(@Nonnull MachineImageType machineImageType) {
-        return false;
+        return imageTypes.contains(machineImageType);
     }
 
     @Override
@@ -130,7 +132,7 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
 
     @Override
     public boolean supportsListingAllRegions() throws CloudException, InternalException {
-        return false;
+        return true;
     }
 
     @Override
@@ -139,12 +141,12 @@ public class DOImageCapabilities extends AbstractCapabilities<DigitalOcean> impl
     }
 
     @Override
-    public boolean imageCaptureDestroysVM() throws CloudException, InternalException{
+    public boolean imageCaptureDestroysVM() throws CloudException, InternalException {
         return false;
     }
 
     @Override
-    public NamingConstraints getImageNamingConstraints(){
-        return NamingConstraints.getAlphaNumeric(3, 128).constrainedBy('(', ')', '.', '-', '/', '_');
+    public @Nonnull NamingConstraints getImageNamingConstraints() throws CloudException, InternalException {
+        return NamingConstraints.getAlphaNumeric(1, 255).constrainedBy('_', '-', '(', ')', '+', ',', '.'); // nothing about this in the docs
     }
 }

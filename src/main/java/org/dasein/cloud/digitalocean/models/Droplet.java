@@ -25,19 +25,27 @@ import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
 import javax.annotation.Nullable;
 
-
 public class Droplet implements DigitalOceanRestModel {
-	String id;
-	String name;
-	Image image;
-	Region region;
+	private String id;
+    private String name;
+    private Image image;
+    private Region region;
 
-	Size size;
+    private Size size;
     @SerializedName("size_slug")
-    String sizeSlug; // this is a workaround for a minimised response on droplet create
+    private String sizeSlug; // this is a workaround for a minimised response on droplet create
 
-	Networks networks;
-	String status;
+    private Networks networks;
+    private String status;
+    @SerializedName( "snapshot_ids" ) String[] snapshotIds;
+
+    public String[] getSnapshotIds() {
+        return snapshotIds;
+    }
+
+    public void setSnapshotIds(String[] snapshotIds) {
+        this.snapshotIds = snapshotIds;
+    }
 
     public String getSizeSlug() {
         return sizeSlug;
@@ -45,43 +53,43 @@ public class Droplet implements DigitalOceanRestModel {
 
     public String getId() {
 
-		return id;
-	}
-	
-	public String getName() {
-		return name;
-	}
-	
-	public Size getSize() {
-		return size;
-	}
+        return id;
+    }
 
-	public Image getImage() {
-		return image;
-	}
+    public String getName() {
+        return name;
+    }
+
+    public Size getSize() {
+        return size;
+    }
+
+    public Image getImage() {
+        return image;
+    }
 
     public Networks getNetworks() {
         return networks;
     }
 
     public Region getRegion() {
-		return region;
-	}
-	
-	public @Nullable VmState getStatus() {
-		if( "active".equals(status) ) {
-			return VmState.RUNNING;
-		}
+        return region;
+    }
+
+    public @Nullable VmState getStatus() {
+        if( "active".equals(status) ) {
+            return VmState.RUNNING;
+        }
         else if( "new".equals(status) ) {
-			return VmState.PENDING;
-		}
+            return VmState.PENDING;
+        }
         else if( "off".equals(status) ) {
-			return VmState.STOPPED;
-		}
+            return VmState.STOPPED;
+        }
         else if( "archive".equals(status) ) {
-			return VmState.TERMINATED;
-		}
-		return null;
-	}
+            return VmState.TERMINATED;
+        }
+        return null;
+    }
 
 }

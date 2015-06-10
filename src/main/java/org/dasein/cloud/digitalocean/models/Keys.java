@@ -16,24 +16,22 @@
  * limitations under the License.
  * ====================================================================
  */
-
 package org.dasein.cloud.digitalocean.models;
 
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import java.util.ArrayList;
+import java.util.List;
 
 public class Keys implements DigitalOceanRestModel {
 
-	Set<Key> sKey = new HashSet<Key>();
-	
-	public void addKey(Key d) {
-		sKey.add(d);		
-	}
-	
-	public Set<Key> getKey() {
-		return sKey;
-	}
+    List<Key> keys = new ArrayList<Key>();
+
+    public void addKey(Key d) {
+        keys.add(d);
+    }
+
+    public List<Key> getKeys() {
+        return keys;
+    }
 }
