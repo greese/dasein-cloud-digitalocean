@@ -209,6 +209,41 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         }
     }
 
+    // TODO: remove this soon
+    public @Nonnull Iterable<VirtualMachineProduct> listProducts( @Nonnull VirtualMachineProductFilterOptions options, @Nullable Architecture architecture ) throws InternalException, CloudException {
+        String cacheName = "ALL";
+        if( architecture != null ) {
+            cacheName = architecture.name();
+        }
+        Cache<VirtualMachineProduct> cache = Cache.getInstance(getProvider(), "products" + cacheName, VirtualMachineProduct.class, CacheLevel.REGION, new TimePeriod<Day>(1, TimePeriod.DAY));
+        Iterable<VirtualMachineProduct> products = cache.get(getContext());
+        if( products != null && products.iterator().hasNext() ) {
+            return products;
+        }
+
+        List<VirtualMachineProduct> list = new ArrayList<VirtualMachineProduct>();
+        //Perform DigitalOcean query
+        Sizes availableSizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
+
+        if (availableSizes != null) {
+            Set<Size> sizes = availableSizes.getSizes();
+            Iterator<Size> itr = sizes.iterator();
+            while(itr.hasNext()) {
+                Size s = itr.next();
+
+                VirtualMachineProduct product = toProduct(s);
+                if( product != null ) {
+                    list.add(product);
+                }
+            }
+            cache.put(getContext(), list);
+        }
+        else {
+            logger.error("No product could be found, " + getProvider().getCloudName() + " provided no data for their sizes API.");
+            throw new CloudException("No product could be found.");
+        }
+        return list;
+    }
 
     @Override
     public @Nonnull Iterable<VirtualMachineProduct> listProducts(String machineImageId, VirtualMachineProductFilterOptions options) throws InternalException, CloudException {
