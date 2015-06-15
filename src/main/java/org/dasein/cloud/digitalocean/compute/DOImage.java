@@ -219,7 +219,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
             Images images = (Images) getModel(getProvider(), cmd);
             int total = images.getTotal();
             int page = 1;
-            while( true ) {
+            while( images.getImages().size() > 0 ) { // let's check >0 just in case
                 for( Image image : images.getImages() ) {
                     MachineImage machineImage = toImage(image);
                     // check if image regions match the requested region if any
