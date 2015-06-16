@@ -204,7 +204,11 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
                 }
             }
 
-            Cache<MachineImage> cache = Cache.getInstance(provider, "images" + ( publicImagesOnly ? "pub" : "prv" ) + "-" + regionId, MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
+            String cacheName = "ALL";
+            if( !options.getWithAllRegions() ) {
+                cacheName = regionId;
+            }
+            Cache<MachineImage> cache = Cache.getInstance(provider, "images" + ( publicImagesOnly ? "pub" : "prv" ) + "-" + cacheName, MachineImage.class, CacheLevel.REGION_ACCOUNT, new TimePeriod<Minute>(5, TimePeriod.MINUTE));
             Collection<MachineImage> cachedImages = ( Collection<MachineImage> ) cache.get(getContext());
             if( cachedImages != null ) {
                 return cachedImages;
@@ -215,15 +219,27 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
             Images images = (Images) getModel(getProvider(), cmd);
             int total = images.getTotal();
             int page = 1;
-            while( true ) {
+            while( images.getImages().size() > 0 ) { // let's check >0 just in case
                 for( Image image : images.getImages() ) {
                     MachineImage machineImage = toImage(image);
-                    if( machineImage != null && options.matches(machineImage) && publicImagesOnly == machineImage.isPublic() ) {
-                        // explode image to all regions, update total count
-                        int regions = image.getRegions().length;
-                        total += regions-1;
-                        for( String region : image.getRegions() ) {
-                            machineImage.setProviderRegionId(regionId);
+                    // check if image regions match the requested region if any
+                    if( !options.getWithAllRegions() && image.getRegions().length > 0 && !Arrays.asList(image.getRegions()).contains(getContext().getRegionId()) ) {
+                        total--;
+                        continue;
+                    }
+
+                    if( machineImage != null && publicImagesOnly == machineImage.isPublic() ) {
+                        if( options.getWithAllRegions() ) {
+                            // explode image to all regions, update total count
+                            int regions = image.getRegions().length;
+                            total += regions - 1;
+                            for( String region : image.getRegions() ) {
+                                machineImage.setProviderRegionId(region);
+                                results.add(machineImage);
+                            }
+                        }
+                        else {
+                            // only add for one region as requested
                             results.add(machineImage);
                         }
                     }
@@ -236,9 +252,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
                 }
                 images = (Images) getModel(getProvider(), cmd, ++page);
             }
-            // TODO: work out unique caches names based on filter parameters
-            // or else cache all, and filter after
-//            cache.put(getContext(), results);
+            cache.put(getContext(), results);
             return results;
         }
         catch (Throwable e) {
@@ -249,11 +263,8 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         }
     }
 
-    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image image) throws InternalException {
+    private MachineImage toImage(org.dasein.cloud.digitalocean.models.Image image) throws InternalException, CloudException {
         if (image == null) {
-            return null;
-        }
-        if( image.getRegions().length > 0 && !Arrays.asList(image.getRegions()).contains(getContext().getRegionId()) ) {
             return null;
         }
 
@@ -429,7 +440,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
     @Override
     public
     @Nonnull
-    Iterable<MachineImage> listImages(@Nullable ImageFilterOptions options) throws CloudException, InternalException {
+    Iterable<MachineImage> listImages(final @Nullable ImageFilterOptions options) throws CloudException, InternalException {
         final ImageFilterOptions opts;
 
         if (options == null) {
@@ -449,7 +460,9 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
                 APITrace.begin(getProvider(), "Image.listImages");
                 try {
                     for (MachineImage img : executeImageSearch(false, opts)) {
-                        iterator.push(img);
+                        if( options.matches(img) ) {
+                            iterator.push(img);
+                        }
                     }
                 }
                 finally {
@@ -475,7 +488,9 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
                 try {
                     try {
                         for (MachineImage img : executeImageSearch(true, options)) {
-                            iterator.push(img);
+                            if( options.matches(img) ) {
+                                iterator.push(img);
+                            }
                         }
                     } finally {
                         provider.release();
