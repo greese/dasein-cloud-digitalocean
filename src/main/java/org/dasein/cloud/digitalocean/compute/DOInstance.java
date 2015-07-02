@@ -434,7 +434,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         
         VirtualMachine server = new VirtualMachine();
 
-        server.setPersistent(false);
+        server.setPersistent(true);
         server.setProviderOwnerId(ctx.getAccountNumber());
         server.setCurrentState(instance.getStatus());
         server.setName(instance.getName());
