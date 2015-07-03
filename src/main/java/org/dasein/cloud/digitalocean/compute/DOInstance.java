@@ -57,29 +57,25 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     }
 
     @Override
-    public VirtualMachine alterVirtualMachine(@Nonnull String vmId, @Nonnull VMScalingOptions options) throws InternalException, CloudException {
+    public @Nonnull VirtualMachine alterVirtualMachineProduct(@Nonnull String virtualMachineId, @Nonnull String productId) throws InternalException, CloudException{
         APITrace.begin(getProvider(), "alterVirtualMachine");
         
         try {
-        	String newProductId = options.getProviderProductId();
-        	if (newProductId == null) {
-        		throw new CloudException("Product Id must not be empty");
-        	}
 
-        	VirtualMachine vm = getVirtualMachine(vmId);
+        	VirtualMachine vm = getVirtualMachine(virtualMachineId);
         	
         	if (!getCapabilities().canAlter(vm.getCurrentState())) {
         		throw new CloudException("Droplet is currently " + vm.getCurrentState() + ". Please power it off to run this event.");        		
         	}
         	
-        	if (vm.getProductId().compareTo(newProductId) == 0) {
+        	if (vm.getProductId().compareTo(productId) == 0) {
         		throw new CloudException("Product Id must differ from current vm product id");
         	}
         	
-    		Resize action = new Resize(newProductId);            
+    		Resize action = new Resize(productId);
 
-            DigitalOceanModelFactory.performAction(getProvider(), action, vmId);
-            vm = getVirtualMachine(vmId);
+            DigitalOceanModelFactory.performAction(getProvider(), action, virtualMachineId);
+            vm = getVirtualMachine(virtualMachineId);
             return vm;
         } catch( CloudException e ) {
             logger.error(e.getMessage());
