@@ -19,21 +19,23 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+import org.dasein.cloud.digitalocean.models.rest.PaginatedModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
+public class Droplets extends PaginatedModel {
 
-public class Droplets implements DigitalOceanRestModel {
-
-	List<Droplet> droplets = new ArrayList<Droplet>();
+	private List<Droplet> droplets;
 	
 	public void addDroplet(Droplet d) {
-		droplets.add(d);
+		getDroplets().add(d);
 	}
 	
 	public List<Droplet> getDroplets() {
+		if( droplets == null ) {
+			droplets = new ArrayList<Droplet>();
+		}
 		return droplets;
 	}
 }
