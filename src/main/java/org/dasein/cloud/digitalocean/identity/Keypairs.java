@@ -20,9 +20,10 @@
 package org.dasein.cloud.digitalocean.identity;
 
 import org.apache.log4j.Logger;
-import org.dasein.cloud.*;
+import org.dasein.cloud.CloudException;
+import org.dasein.cloud.InternalException;
+import org.dasein.cloud.OperationNotSupportedException;
 import org.dasein.cloud.digitalocean.DigitalOcean;
-import org.dasein.cloud.digitalocean.models.Action;
 import org.dasein.cloud.digitalocean.models.Key;
 import org.dasein.cloud.digitalocean.models.Keys;
 import org.dasein.cloud.digitalocean.models.actions.sshkey.Create;
@@ -36,12 +37,11 @@ import org.dasein.cloud.util.APITrace;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
+
+import static org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS;
+import static org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory.getModel;
 
 public class Keypairs extends AbstractShellKeySupport<DigitalOcean> {
 	static private final Logger logger = DigitalOcean.getLogger(Keypairs.class);
@@ -149,23 +149,35 @@ public class Keypairs extends AbstractShellKeySupport<DigitalOcean> {
     @Override
 	public @Nonnull Iterable<SSHKeypair> list() throws InternalException, CloudException {
         APITrace.begin(getProvider(), "Keypair.list");
-        List<SSHKeypair> keypairs = new ArrayList<SSHKeypair>();
+        List<SSHKeypair> results = new ArrayList<SSHKeypair>();
         try {
-            Keys keys = (Keys) DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.KEYS);
+            Keys keys = (Keys) DigitalOceanModelFactory.getModel(getProvider(), KEYS);
             if (keys == null) {
-                return null;
+                return results;
             }
-            for( Key k : keys.getKeys() ) {
-                SSHKeypair kp = toSSHKeypair(k);
-                if( kp != null ) {
-                    keypairs.add(kp);
+            int page = 1;
+            int total = keys.getTotal();
+            while( keys.getKeys().size() > 0 ) {
+                for (Key k : keys.getKeys()) {
+                    SSHKeypair kp = toSSHKeypair(k);
+
+                    if( kp != null ) {
+                        results.add(kp);
+                    } else {
+                        // discount the invalid ones
+                        total--;
+                    }
                 }
+                if( total <= 0 || total == results.size() ) {
+                    break;
+                }
+                keys = (Keys) getModel(getProvider(), KEYS, ++page);
             }
+            return results;
         }
         finally {
             APITrace.end();
         }
-        return keypairs;
 	}
     
 	@Override

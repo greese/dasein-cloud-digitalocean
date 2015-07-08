@@ -19,20 +19,20 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * Created by mariapavlova on 21/10/2014.
  */
 public class Networks {
-    Set<Network> v4;
-    Set<Network> v6;
+    private List<Network> v4;
+    private List<Network> v6;
 
-    public Set<Network> getV4() {
+    public List<Network> getV4() {
         return v4;
     }
 
-    public Set<Network> getV6() {
+    public List<Network> getV6() {
         return v6;
     }
 }
