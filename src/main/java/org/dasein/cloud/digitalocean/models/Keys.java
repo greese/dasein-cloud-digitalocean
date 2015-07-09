@@ -18,20 +18,23 @@
  */
 package org.dasein.cloud.digitalocean.models;
 
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+import org.dasein.cloud.digitalocean.models.rest.PaginatedModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Keys implements DigitalOceanRestModel {
+public class Keys extends PaginatedModel {
 
-    List<Key> keys = new ArrayList<Key>();
+    private List<Key> keys;
 
     public void addKey(Key d) {
-        keys.add(d);
+        getKeys().add(d);
     }
 
     public List<Key> getKeys() {
+        if( keys == null ) {
+            keys = new ArrayList<Key>();
+        }
         return keys;
     }
 }
