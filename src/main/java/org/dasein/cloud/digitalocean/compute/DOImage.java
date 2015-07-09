@@ -27,21 +27,13 @@ import org.dasein.cloud.OperationNotSupportedException;
 import org.dasein.cloud.ProviderContext;
 import org.dasein.cloud.ResourceStatus;
 import org.dasein.cloud.Tag;
-import org.dasein.cloud.compute.AbstractImageSupport;
-import org.dasein.cloud.compute.Architecture;
-import org.dasein.cloud.compute.ImageCapabilities;
-import org.dasein.cloud.compute.ImageClass;
-import org.dasein.cloud.compute.ImageCreateOptions;
-import org.dasein.cloud.compute.ImageFilterOptions;
-import org.dasein.cloud.compute.MachineImage;
-import org.dasein.cloud.compute.MachineImageState;
-import org.dasein.cloud.compute.Platform;
-import org.dasein.cloud.compute.VirtualMachine;
+import org.dasein.cloud.compute.*;
 import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.models.Action;
 import org.dasein.cloud.digitalocean.models.Droplet;
 import org.dasein.cloud.digitalocean.models.Image;
 import org.dasein.cloud.digitalocean.models.Images;
+import org.dasein.cloud.digitalocean.models.actions.image.Destroy;
 import org.dasein.cloud.digitalocean.models.actions.droplet.Snapshot;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
 import org.dasein.cloud.identity.ServiceAction;
@@ -433,7 +425,13 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
 
     @Override
     public void remove(@Nonnull String providerImageId, boolean checkState) throws CloudException, InternalException {
-        throw new OperationNotSupportedException("Image removal not supported by " + getProvider().getCloudName());
+        APITrace.begin(getProvider(), "Image.remove");
+        try {
+            DigitalOceanModelFactory.performAction(getProvider(), new Destroy(), providerImageId);
+        }
+        finally {
+            APITrace.end();
+        }
     }
 
     @Override
