@@ -416,6 +416,13 @@ public class DigitalOceanModelFactory {
 						throw new CloudException("Parameter 'private_networking' must be of type Boolean");
 					}
 				}
+                if (extraParameters.containsKey("user_data")){
+                    try {
+                        action.setUserdata((String)extraParameters.get("user_data"));
+                    } catch (Exception ee) {
+                        throw new CloudException("Parameter 'user_data' must be of type String");
+                    }
+                }
 			}
 		
 			if( bootstrapKey != null ) {
