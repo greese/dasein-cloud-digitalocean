@@ -38,20 +38,19 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class DOLocation implements DataCenterServices {
+public class DOLocation extends AbstractDataCenterServices<DigitalOcean> {
     static private final Logger logger = DigitalOcean.getLogger(DOLocation.class);
 
-    private                    DigitalOcean             provider;
     private transient volatile DODataCenterCapabilities capabilities;
 
     public DOLocation(@Nonnull DigitalOcean provider) {
-        this.provider = provider;
+        super(provider);
     }
 
-    @Nonnull @Override
-    public DataCenterCapabilities getCapabilities() throws InternalException, CloudException {
+    @Override
+    public @Nonnull DataCenterCapabilities getCapabilities() throws InternalException, CloudException {
         if( capabilities == null ) {
-            capabilities = new DODataCenterCapabilities(provider);
+            capabilities = new DODataCenterCapabilities(getProvider());
         }
         return capabilities;
     }
@@ -63,16 +62,6 @@ public class DOLocation implements DataCenterServices {
             return null;
         }
         return new DataCenter(dataCenterId, region.getName(), dataCenterId, region.isActive(), region.isAvailable());
-    }
-
-    @Override
-    public @Nonnull String getProviderTermForDataCenter(@Nonnull Locale locale) {
-        return "data center";
-    }
-
-    @Override
-    public @Nonnull String getProviderTermForRegion(@Nonnull Locale locale) {
-        return "region";
     }
 
     @Override
@@ -92,90 +81,30 @@ public class DOLocation implements DataCenterServices {
 
     @Override
     public Collection<Region> listRegions() throws InternalException, CloudException {
-        APITrace.begin(provider, "listRegions");
+        APITrace.begin(getProvider(), "listRegions");
         try {
-            ProviderContext ctx = provider.getContext();
-
-            if( ctx == null ) {
-                throw new NoContextException();
-            }
-            Cache<Region> cache = Cache.getInstance(provider, "regions", Region.class, CacheLevel.CLOUD_ACCOUNT, new TimePeriod<Hour>(10, TimePeriod.HOUR));
-            Collection<Region> regions = (Collection<Region>)cache.get(ctx);
-
+            Cache<Region> cache = Cache.getInstance(getProvider(), "regions", Region.class, CacheLevel.CLOUD_ACCOUNT, new TimePeriod<Hour>(10, TimePeriod.HOUR));
+            Collection<Region> regions = (Collection<Region>)cache.get(getContext());
             if( regions != null ) {
                 return regions;
             }
             regions = new ArrayList<Region>();
 
-
-            Regions availableregions;
-			try {
-				availableregions = (Regions)DigitalOceanModelFactory.getModel(provider, org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
-
-	            Set<org.dasein.cloud.digitalocean.models.Region> regionsQuery = availableregions.getRegions();
-	            Iterator<org.dasein.cloud.digitalocean.models.Region> itr = regionsQuery.iterator();
-	            while(itr.hasNext()) {
-	            	org.dasein.cloud.digitalocean.models.Region s = itr.next();
-	            	Region vmp = toRegion(s);
-	            	regions.add(vmp);
-	            }
-	            cache.put(ctx, regions);
-	            return regions;
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new CloudException(e);
-			}
+            Regions availableRegions = (Regions)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.REGIONS);
+            for( org.dasein.cloud.digitalocean.models.Region s : availableRegions.getRegions() ) {
+                Region vmp = toRegion(s);
+                regions.add(vmp);
+            }
+            cache.put(getContext(), regions);
+            return regions;
         }
         finally {
             APITrace.end();
         }
     }
 
-    @Nonnull
-    @Override
-    public Collection<ResourcePool> listResourcePools(String providerDataCenterId) throws InternalException, CloudException {
-        throw new CloudException(provider.getCloudName() + " does not support resource pools");
-    }
-
-    @Nullable
-    @Override
-    public ResourcePool getResourcePool(String providerResourcePoolId) throws InternalException, CloudException {
-        throw new CloudException(provider.getCloudName() + " does not support resource pools");
-    }
-
-    @Nonnull
-    @Override
-    public Collection<StoragePool> listStoragePools() throws InternalException, CloudException {
-        throw new CloudException(provider.getCloudName() + " does not support storage pools");
-    }
-
-    @Nonnull
-    @Override
-    public StoragePool getStoragePool(String providerStoragePoolId) throws InternalException, CloudException {
-        throw new CloudException(provider.getCloudName() + " does not support storage pools");
-    }
-
-    @Nonnull
-    @Override
-    public Collection<Folder> listVMFolders() throws InternalException, CloudException {
-        throw new CloudException(provider.getCloudName() + " does not support vm folders");
-    }
-
-    @Nonnull
-    @Override
-    public Folder getVMFolder(String providerVMFolderId) throws InternalException, CloudException {
-        throw new CloudException(provider.getCloudName() + " does not support vm folders");
-    }
-
     public DataCenter toDatacenter(org.dasein.cloud.digitalocean.models.Region r) {
-
-    	DataCenter dc = new DataCenter();
-    	dc.setRegionId(r.getSlug());
-    	dc.setProviderDataCenterId(r.getSlug());
-    	dc.setName(r.getName());
-    	dc.setActive(r.getActive());
-    	dc.setAvailable(r.getActive());
-    	return dc;
+    	return new DataCenter(r.getSlug(), r.getName(), r.getSlug(), r.getActive(), r.getAvailable());
     }
 
     public Region toRegion(org.dasein.cloud.digitalocean.models.Region region) {
@@ -184,15 +113,12 @@ public class DOLocation implements DataCenterServices {
     	r.setProviderRegionId(region.getSlug());
     	r.setName(region.getName());
     	r.setActive(region.getActive());
-        String slugName = region.getSlug().substring(0,2).toUpperCase();
+        String slugName = region.getSlug().toLowerCase();
         String jurisdiction = Jurisdiction.US.name();
-        if(slugName.equals("NYC") || slugName.equals("SFO")){
-
-        }
-        else if(slugName.equals("AMS") || slugName.equals("LON")){
+        if( slugName.startsWith("ams") || slugName.startsWith("lon") ){
             jurisdiction = Jurisdiction.EU.name();
         }
-        else if(slugName.equals("SGP")){
+        else if( slugName.startsWith("sgp") ){
             jurisdiction = Jurisdiction.SG.name();
         }
     	r.setJurisdiction(jurisdiction);
