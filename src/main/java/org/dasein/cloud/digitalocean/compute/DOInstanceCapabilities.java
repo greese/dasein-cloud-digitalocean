@@ -43,7 +43,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean canAlter(@Nonnull VmState fromState) throws CloudException, InternalException {
-    	 return false;  //fromState.equals(VmState.STOPPED); - temporarily unavailable
+    	 return fromState.equals(VmState.STOPPED);
     }
 
     @Override
@@ -123,7 +123,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public @Nullable VMScalingCapabilities getVerticalScalingCapabilities() throws CloudException, InternalException {
-    	 return VMScalingCapabilities.getInstance(false, true, Requirement.NONE, Requirement.NONE);
+    	 return VMScalingCapabilities.getInstance(false, true, false);
     }
 
     @Nonnull
