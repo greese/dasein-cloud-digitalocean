@@ -19,22 +19,23 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanGetAction;
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+import org.dasein.cloud.digitalocean.models.rest.PaginatedModel;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-
-public class Regions extends  DigitalOceanGetAction implements DigitalOceanRestModel {
+public class Regions extends PaginatedModel {
 	
-	Set<Region> sRegion = new HashSet<Region>();
+	private List<Region> regions;
 	
 	public void addRegion(Region r) {
-		sRegion.add(r);		
+		getRegions().add(r);
 	}
 	
-	public Set<Region> getRegions() {
-		return sRegion;
+	public List<Region> getRegions() {
+		if( regions == null ) {
+            regions = new ArrayList<Region>();
+        }
+        return regions;
 	}
 }

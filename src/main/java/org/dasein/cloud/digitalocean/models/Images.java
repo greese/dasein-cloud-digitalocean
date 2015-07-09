@@ -19,32 +19,25 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+import org.dasein.cloud.digitalocean.models.rest.PaginatedModel;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 
-public class Images implements DigitalOceanRestModel {
+public class Images extends PaginatedModel {
 
-    List<Image> sImage = new ArrayList<Image>();
-    private int total;
+    List<Image> images;
 
     public void addImage(Image d) {
-        sImage.add(d);
+        getImages().add(d);
     }
 
     public List<Image> getImages() {
-        return sImage;
+        if( images == null ) {
+            images = new ArrayList<Image>();
+        }
+        return images;
     }
 
-    public void setTotal(int total) {
-        this.total = total;
-    }
-
-    public int getTotal() {
-        return total;
-    }
 }

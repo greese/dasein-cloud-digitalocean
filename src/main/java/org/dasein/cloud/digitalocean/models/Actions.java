@@ -19,13 +19,12 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+import org.dasein.cloud.digitalocean.models.rest.PaginatedModel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
-public class Actions implements DigitalOceanRestModel {
+public class Actions extends PaginatedModel {
 
     private List<Action> actions;
 

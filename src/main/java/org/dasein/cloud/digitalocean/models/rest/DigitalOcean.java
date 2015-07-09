@@ -87,6 +87,11 @@ public enum DigitalOcean implements IDigitalOcean {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Droplet.class);
 					droplets.addDroplet((Droplet)u);
 				}
+				JSONObject meta = jso.getJSONObject("meta");
+				if( meta.has("total") ) {
+					droplets.setTotal(meta.getInt("total"));
+				}
+
 				return droplets;
 			}
 
@@ -101,6 +106,11 @@ public enum DigitalOcean implements IDigitalOcean {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Size.class);
 					sizes.addSize((Size)u);
 				}
+				JSONObject meta = jso.getJSONObject("meta");
+				if( meta.has("total") ) {
+					sizes.setTotal(meta.getInt("total"));
+				}
+
 				return sizes;
 			}
 			
@@ -113,6 +123,11 @@ public enum DigitalOcean implements IDigitalOcean {
 					} catch (Exception ignore) {
 					}
 				}
+				JSONObject meta = jso.getJSONObject("meta");
+				if( meta.has("total") ) {
+					regions.setTotal(meta.getInt("total"));
+				}
+
 				return regions;
 			}
 
@@ -130,6 +145,11 @@ public enum DigitalOcean implements IDigitalOcean {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Action.class);
 					actions.addAction((Action)u);
 				}
+				JSONObject meta = jso.getJSONObject("meta");
+				if( meta.has("total") ) {
+					actions.setTotal(meta.getInt("total"));
+				}
+
 				return actions;
 			}
 			
@@ -147,6 +167,10 @@ public enum DigitalOcean implements IDigitalOcean {
 				for (int i = 0; i < jsArray.length(); i++) {
 					Object u = gson.fromJson(jsArray.getJSONObject(i).toString(), Key.class);
 					keys.addKey((Key)u);
+				}
+				JSONObject meta = jso.getJSONObject("meta");
+				if( meta.has("total") ) {
+					keys.setTotal(meta.getInt("total"));
 				}
 				return keys;
 			}
