@@ -20,7 +20,7 @@
 package org.dasein.cloud.digitalocean.models.rest;
 
 public enum ActionType {
-	DROPLET, KEY;
+	DROPLET, KEY, IMAGE;
 	
 	@Override
 	public String toString() {
@@ -29,6 +29,8 @@ public enum ActionType {
 				return "v2/droplets/%s/actions";
 			case KEY:
 				return "v2/account/keys/%s/actions";
+            case IMAGE:
+                return "v2/images/%s/actions";
 			default:
 				return "v2/????";
 		}
