@@ -318,18 +318,26 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public @Nonnull Iterable<ResourceStatus> listVirtualMachineStatus() throws InternalException, CloudException {
         APITrace.begin(getProvider(), "listVirtualMachineStatus");
         try {
-            List<ResourceStatus> list = new ArrayList<ResourceStatus>();
+            List<ResourceStatus> results = new ArrayList<ResourceStatus>();
             Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
-            if (droplets != null) {
-                List<Droplet> dropletList = droplets.getDroplets();
-                for( Droplet d : dropletList ) {
+            int page = 1;
+            int total = droplets.getTotal();
+            while( droplets.getDroplets().size() > 0 ) {
+                for( Droplet d : droplets.getDroplets() ) {
                     ResourceStatus status = toStatus(d);
                     if( status != null ) {
-                        list.add(status);
+                        results.add(status);
+                    }
+                    else {
+                        total --;
                     }
                 }
+                if( total <= 0 || total == results.size() ) {
+                    break;
+                }
+                droplets = (Droplets) getModel(getProvider(), DROPLETS, ++page);
             }
-            return list;
+            return results;
         } finally {
             APITrace.end();
         }
