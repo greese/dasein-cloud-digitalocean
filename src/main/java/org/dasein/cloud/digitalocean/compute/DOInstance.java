@@ -26,6 +26,7 @@ import org.dasein.cloud.digitalocean.DigitalOcean;
 import org.dasein.cloud.digitalocean.models.*;
 import org.dasein.cloud.digitalocean.models.actions.droplet.*;
 import org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory;
+import static org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS;
 import org.dasein.cloud.network.IPVersion;
 import org.dasein.cloud.network.RawAddress;
 import org.dasein.cloud.util.APITrace;
@@ -45,6 +46,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import static org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory.getModel;
 
 
 public class DOInstance extends AbstractVMSupport<DigitalOcean> {
@@ -167,7 +170,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         try {
             Droplet d = (Droplet) DigitalOceanModelFactory.getModelById(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLET, instanceId);
             if (d != null) {
-                VirtualMachine server = toVirtualMachine(getContext(), d);
+                VirtualMachine server = toVirtualMachine(d);
                 if (server != null && server.getProviderVirtualMachineId().equals(instanceId)) {
                     return server;
                 }
@@ -226,11 +229,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         Sizes availableSizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
 
         if (availableSizes != null) {
-            Set<Size> sizes = availableSizes.getSizes();
-            Iterator<Size> itr = sizes.iterator();
-            while(itr.hasNext()) {
-                Size s = itr.next();
-
+            for( Size s : availableSizes.getSizes() ) {
                 VirtualMachineProduct product = toProduct(s);
                 if( product != null ) {
                     list.add(product);
@@ -263,11 +262,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         Sizes availableSizes = (Sizes)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.SIZES);
 
         if (availableSizes != null) {
-            Set<Size> sizes = availableSizes.getSizes();
-            Iterator<Size> itr = sizes.iterator();
-            while(itr.hasNext()) {
-                Size s = itr.next();
-
+            for( Size s : availableSizes.getSizes() ) {
                 VirtualMachineProduct product = toProduct(s);
                 if( product != null ) {
                     list.add(product);
@@ -352,19 +347,29 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
     public @Nonnull Iterable<VirtualMachine> listVirtualMachines(@Nullable VMFilterOptions options) throws InternalException, CloudException {
         APITrace.begin(getProvider(), "listVirtualMachines");
         try {
-            List<VirtualMachine> list = new ArrayList<VirtualMachine>();
+            List<VirtualMachine> results = new ArrayList<VirtualMachine>();
 
-            Droplets droplets = (Droplets)DigitalOceanModelFactory.getModel(getProvider(), org.dasein.cloud.digitalocean.models.rest.DigitalOcean.DROPLETS );
-            if (droplets != null) {
-                List<Droplet> dropletList = droplets.getDroplets();
-                for( Droplet d : dropletList ) {
-                    VirtualMachine vm = toVirtualMachine(getContext(), d);
-                    if( options == null || options.matches(vm) ) {
-                        list.add(vm);
+            Droplets droplets = (Droplets) DigitalOceanModelFactory.getModel(getProvider(), DROPLETS);
+            int page = 1;
+            int total = droplets.getTotal();
+            while( droplets.getDroplets().size() > 0 ) {
+                for( Droplet d : droplets.getDroplets() ) {
+                    VirtualMachine vm = toVirtualMachine(d);
+                    if( (options == null || options.matches(vm)) &&
+                            vm.getProviderRegionId().equalsIgnoreCase(getContext().getRegionId()) ) {
+                        results.add(vm);
+                    }
+                    else {
+                        total --;
                     }
                 }
+                if( total <= 0 || total == results.size() ) {
+                    break;
+                }
+                droplets = (Droplets) getModel(getProvider(), DROPLETS, ++page);
+
             }
-            return list;
+            return results;
         } finally {
             APITrace.end();
         }
@@ -426,7 +431,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         return new ResourceStatus(instance.getId(), instance.getStatus());
     }
 
-    private @Nullable VirtualMachine toVirtualMachine(@Nonnull ProviderContext ctx, @Nullable Droplet instance) throws CloudException {
+    private @Nullable VirtualMachine toVirtualMachine(@Nullable Droplet instance) throws CloudException, InternalException {
         if( instance == null ) {
             return null;
         }
@@ -434,7 +439,7 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         VirtualMachine server = new VirtualMachine();
 
         server.setPersistent(true);
-        server.setProviderOwnerId(ctx.getAccountNumber());
+        server.setProviderOwnerId(getContext().getAccountNumber());
         server.setCurrentState(instance.getStatus());
         server.setName(instance.getName());
         if( instance.getSize() != null && instance.getSize().getSlug() != null ) {
@@ -451,11 +456,13 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
         server.setProviderVirtualMachineId(instance.getId());
         server.setProviderMachineImageId(instance.getImage().getId());
 
-        server.setProviderRegionId(ctx.getRegionId());
-        server.setProviderDataCenterId(ctx.getRegionId());
         if( instance.getRegion() != null ) {
             server.setProviderRegionId(instance.getRegion().getSlug());
             server.setProviderDataCenterId(instance.getRegion().getSlug());
+        }
+        else {
+            server.setProviderRegionId(getContext().getRegionId());
+            server.setProviderDataCenterId(getContext().getRegionId());
         }
 
         if( instance.getName().contains("64")) {

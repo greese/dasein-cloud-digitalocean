@@ -19,21 +19,23 @@
 
 package org.dasein.cloud.digitalocean.models;
 
-import org.dasein.cloud.digitalocean.models.rest.DigitalOceanRestModel;
+import org.dasein.cloud.digitalocean.models.rest.PaginatedModel;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
+public class Sizes extends PaginatedModel {
 
-public class Sizes implements DigitalOceanRestModel {
-
-	Set<Size> sSize = new HashSet<Size>();
+	private List<Size> sizes;
 	
 	public void addSize(Size d) {
-		sSize.add(d);		
+		getSizes().add(d);
 	}
 	
-	public Set<Size> getSizes() {
-		return sSize;
+	public List<Size> getSizes() {
+		if( sizes == null ) {
+			sizes = new ArrayList<Size>();
+		}
+		return sizes;
 	}
 }
