@@ -42,10 +42,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory.getModel;
 
@@ -305,7 +302,13 @@ public class DOInstance extends AbstractVMSupport<DigitalOcean> {
             	}
             }
 
-            Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), null);
+            Map<String, Object> extraParams = null;
+            if(cfg.getUserData() != null && !cfg.getUserData().equals("")){
+                extraParams = new HashMap<String, Object>();
+                extraParams.put("user_data", cfg.getUserData());
+            }
+
+            Droplet droplet = DigitalOceanModelFactory.createInstance(getProvider(), hostname, product, cfg.getMachineImageId(), regionId, cfg.getBootstrapKey(), extraParams);
             // returned droplet doesn't have enough information for our VirtualMachine to be complete, let's refresh
             try { Thread.sleep(5000L); } catch( InterruptedException e ) {} // wait 5 sec for vm to get into a better shape
             return getVirtualMachine(droplet.getId());
