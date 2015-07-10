@@ -61,6 +61,7 @@ public class Create extends DigitalOceanPostAction {
 	List<String> ssh_key_ids = new ArrayList<String>();
 	boolean private_networking = true;
 	boolean backups_enabled = false;
+	String userdata;
 	
 	public Create( String name, String size, String image_or_imageId, String region_slug_or_id) {
 		this.name = name;
@@ -69,8 +70,7 @@ public class Create extends DigitalOceanPostAction {
 		this.region = region_slug_or_id;		
 	}	
 	
-	public Create(String dropletName, Integer sizeId, int theImageId,
-			Long regionId) {
+	public Create(String dropletName, Integer sizeId, int theImageId, Long regionId) {
 		this.name = dropletName;
 		this.image = String.valueOf(theImageId);
 		this.size = String.valueOf(sizeId);
@@ -97,6 +97,10 @@ public class Create extends DigitalOceanPostAction {
 	public boolean getBackupsEnabled() {		
 		return this.backups_enabled;		
 	}
+
+	public void setUserdata(String userdata){this.userdata = userdata;}
+
+	public String getUserdata(){return this.userdata;}
 
 	public JSONObject getParameters() throws CloudException, JSONException {
 		JSONObject postData = new JSONObject();
@@ -130,6 +134,7 @@ public class Create extends DigitalOceanPostAction {
 		postData.put("private_networking", this.private_networking);			
 		postData.put("backups", this.backups_enabled);
 		postData.put("ipv6", this.ipv6);
+		if(this.userdata != null && !this.userdata.equals(""))postData.put("user_data", this.userdata);
 			
 		return postData;
 	}

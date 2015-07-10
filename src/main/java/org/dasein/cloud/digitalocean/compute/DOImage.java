@@ -59,6 +59,7 @@ import static org.dasein.cloud.digitalocean.models.rest.DigitalOceanModelFactory
 
 public class DOImage extends AbstractImageSupport<DigitalOcean> {
     static private final Logger logger = Logger.getLogger(DOImage.class);
+    private static final String DO_OWNER_ID = "--digitalocean--";
 
     private DigitalOcean provider = null;
     private volatile transient ImageCapabilities capabilities;
@@ -228,6 +229,7 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
                             for( String region : image.getRegions() ) {
                                 machineImage.setProviderRegionId(region);
                                 results.add(machineImage);
+                                machineImage = toImage(image);
                             }
                         }
                         else {
@@ -273,9 +275,12 @@ public class DOImage extends AbstractImageSupport<DigitalOcean> {
         if( platform.equals(Platform.UNKNOWN) ) {
             platform = Platform.guess(image.getName());
         }
-
+        String ownerId = getContext().getAccountNumber();
+        if( image.getPublic() ) {
+            ownerId = DO_OWNER_ID;
+        }
         MachineImage machineImage = MachineImage.getInstance(
-                getContext().getAccountNumber(),
+                ownerId,
                 getContext().getRegionId(),
                 image.getId(),
                 ImageClass.MACHINE,
