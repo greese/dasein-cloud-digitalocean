@@ -144,7 +144,7 @@ public class DOInstanceCapabilities extends AbstractCapabilities<DigitalOcean> i
 
     @Override
     public boolean isUserDataSupported() throws CloudException, InternalException {
-        return false;
+        return true;
     }
 
     @Override
